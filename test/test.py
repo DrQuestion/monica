@@ -11,6 +11,7 @@ def test_tables_fetcher():
     except:
         print('test_tables_fetcher broke')
 
+
 def test_tables_updated():
     try:
         os.chdir(tables.TABLES_PATH)
@@ -21,6 +22,7 @@ def test_tables_updated():
         print(f'----------------------------------\ntest_tables_updated worked, returned {ret}\nlog content is {date}\n----------------------------------\n')
     except:
         print('test_tables_updated broke')
+
 
 def test_tables_importer():
     #null case
