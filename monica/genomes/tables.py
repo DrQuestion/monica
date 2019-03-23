@@ -23,10 +23,10 @@ def fetcher():
 def importer(which=None):
     fetcher()
     if which=='refseq':
-        refseq_table = pd.read_table(f'{TABLES_PATH}/{REFSEQ_SUMMARY_FTP.split(sep="/")[-1]}', header=HEADERLINE, low_memory=False)
+        refseq_table = pd.read_csv(f'{TABLES_PATH}/{REFSEQ_SUMMARY_FTP.split(sep="/")[-1]}', header=HEADERLINE, dtype='str', sep='\t')
         return refseq_table
     elif which=='genbank':
-        genbank_table = pd.read_table(f'{TABLES_PATH}/{GENBANK_SUMMARY_FTP.split(sep="/")[-1]}', header=HEADERLINE, low_memory=False)
+        genbank_table = pd.read_csv(f'{TABLES_PATH}/{GENBANK_SUMMARY_FTP.split(sep="/")[-1]}', header=HEADERLINE, dtype='str', sep='\t')
         return genbank_table
     return 0
 

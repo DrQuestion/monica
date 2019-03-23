@@ -19,8 +19,8 @@ def ftp_selector(mode=None, species=[]):
 
     species_name = []
 
-    if not mode:
-        raise Exception('No mode specified. Please select one among the following: single, all or overnight')
+    if not mode in ['single', 'all', 'overnight']:
+        raise Exception('No mode or wrong mode specified. Please select one among the following: single, all or overnight')
 
     if mode=='overnight':
         print ('Activated overnight mode')

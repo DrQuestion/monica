@@ -7,7 +7,8 @@ import pandas as pd
 def test_tables_fetcher():
     try:
         tables.fetcher()
-        print('\n----------------------------------\ntest_tables_fetcher worked\n----------------------------------\n')
+        tables_dir=os.listdir(tables.TABLES_PATH)
+        print(f'\n----------------------------------\ntest_tables_fetcher worked,\ncontent of {tables.TABLES_PATH} is:\n{tables_dir}\n----------------------------------\n')
     except:
         print('test_tables_fetcher broke')
 
@@ -19,7 +20,7 @@ def test_tables_updated():
         with open('log', 'r') as log:
             date = log.read()
         os.chdir(tables.CWD)
-        print(f'----------------------------------\ntest_tables_updated worked, returned {ret}\nlog content is {date}\n----------------------------------\n')
+        print(f'----------------------------------\ntest_tables_updated worked, returned {ret}\nlog content is:\n{date}\n----------------------------------\n')
     except:
         print('test_tables_updated broke')
 
@@ -36,7 +37,7 @@ def test_tables_importer():
     try:
         ret=tables.importer(which='refseq')
         ret=pd.DataFrame.head(ret)
-        print(f'----------------------------------\ntest_tables_importer, which=refseq, worked, returned\n\n{ret}\n----------------------------------\n')
+        print(f'----------------------------------\ntest_tables_importer, which=refseq, worked, head returned\n\n{ret}\n----------------------------------\n')
     except:
         print('----------------------------------\ntest_tables_importer, which=refseq, broke\n----------------------------------\n')
 
@@ -44,7 +45,7 @@ def test_tables_importer():
     try:
         ret=tables.importer(which='genbank')
         ret=pd.DataFrame.head(ret)
-        print(f'----------------------------------\ntest_tables_importer, which=genbank, worked, returned\n\n{ret}\n----------------------------------\n')
+        print(f'----------------------------------\ntest_tables_importer, which=genbank, worked, head returned\n\n{ret}\n----------------------------------\n')
     except:
         print('----------------------------------\ntest_tables_importer, which=genbank, broke\n----------------------------------\n')
 
