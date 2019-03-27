@@ -1,4 +1,4 @@
-from context import fetcher,tables
+from context import tables
 import os
 import pandas as pd
 
