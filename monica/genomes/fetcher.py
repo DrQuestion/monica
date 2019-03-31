@@ -1,10 +1,18 @@
+import os
+import gzip
+import time
+
+import wget
 import pandas as pd
 from ete3 import NCBITaxa
+from Bio import SeqIO
 
 import monica.genomes.tables as tables
 
 ncbi=NCBITaxa()
 PARENTS=['Fungi','Oomycota','Bacteria','Archaea','Viruses','Viroids','Nematodes','Rhizaria','Alveolata','Heterokonta']
+GENOMES_PATH=os.path.join(os.path.dirname(__file__), 'genomes')
+CWD=os.getcwd()
 
 def descendants_taxid_finder(species=[]):
     descendants = []
@@ -15,8 +23,8 @@ def descendants_taxid_finder(species=[]):
     return taxids
 
 def ftp_selector(mode=None, species=[]):
-
     species_name = []
+    ftp_path_list = []
 
     if not mode in ['single', 'all', 'overnight']:
         raise Exception('No mode or wrong mode specified. Please select one among the following: single, all or overnight')
@@ -42,7 +50,7 @@ def ftp_selector(mode=None, species=[]):
         merged_table=table.merge(taxids, on='taxid')
         for name in merged_table.loc[:, 'organism_name']:
             species_name.append(
-                ' '.join([name.split(sep=' ')[0], name.split(sep=' ')[1]]))
+                '_'.join([name.split(sep=' ')[0], name.split(sep=' ')[1]]))
         merged_table['species_name'] = species_name
 
     elif mode=='single':
@@ -52,19 +60,42 @@ def ftp_selector(mode=None, species=[]):
         merged_table = table.merge(taxids, on='taxid')
         for name in merged_table.loc[:, 'organism_name']:
             species_name.append(
-                   ' '.join([name.split(sep=' ')[0], name.split(sep=' ')[1]]))
+                   '_'.join([name.split(sep=' ')[0], name.split(sep=' ')[1]]))
         merged_table['species_name']=species_name
         merged_table=merged_table.drop_duplicates(subset=['species_name'], keep='last')
 
-    merged_table.loc[:, 'ftp_path']=merged_table.loc[:, 'ftp_path']+'_genomic.fna.gz'
+    #modify ftps to obtain genomic dna file
+    for ftp in merged_table.loc[:, 'ftp_path']:
+        filename=ftp.split(sep='/')[-1]+'_genomic.fna.gz'
+        ftp_path_list.append('/'.join([ftp,filename]))
+    merged_table.loc[:, 'ftp_path']=ftp_path_list
+
     return merged_table
 
+def fetcher(table):
+    if not os.path.exists(GENOMES_PATH):
+        os.mkdir(GENOMES_PATH)
+    os.chdir(GENOMES_PATH)
 
+    for row in table.iterrows():
+        ftp=row[1]['ftp_path']
+        filename=ftp.split(sep='/')[-1]
+        new_header_components=[row[1][-1], row[1]['# assembly_accession']]
 
+        print(f'Started {filename} download')
+        t0=time.time()
+        wget.download(ftp)
 
+        header_modifier(filename, new_header_components)
+    print(f'Finished genomes download')
+    os.chdir(CWD)
 
-def fetcher():
-    pass
+def header_modifier(file, new_header_components):
+    new_filename='_'.join(new_header_components)+'.fna.gz'
+    new_header=':'.join(new_header_components)
 
-def function():
-    print('lol')
+    with gzip.open(file, 'rt') as old, gzip.open(new_filename, 'wt') as new:
+        for seq_record in SeqIO.parse(old, 'fasta'):
+            seq_record.id=new_header
+            SeqIO.write(seq_record, new, 'fasta')
+    os.remove(file)
