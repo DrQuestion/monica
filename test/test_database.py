@@ -2,8 +2,8 @@ import os
 
 from context import database
 
-def test_database_builder():
-    database.builder()
+def test_database_builder(oldies):
+    database.builder(oldies)
 
 # def test_database_builder_alt():
 #     os.chdir(database.GENOMES_PATH)

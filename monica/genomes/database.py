@@ -1,27 +1,27 @@
 import os
+import shutil
 #import gzip
 from monica.genomes.fetcher import GENOMES_PATH
 
+GENOMES=os.path.join(GENOMES_PATH, '*.fna.gz')
 DATABASE_PATH=os.path.join(GENOMES_PATH, 'database')
-CWD=os.getcwd()
 DATABASE_NAME='database.fna.gz'
+DATABASE=os.path.join(DATABASE_PATH,DATABASE_NAME)
 
-def builder():
+def builder(oldies):
     if not os.path.exists(DATABASE_PATH):
         os.mkdir(DATABASE_PATH)
+        os.system(f'cat {GENOMES} >> {DATABASE}')
 
-    os.chdir(GENOMES_PATH)
-    database=os.path.join(DATABASE_PATH,DATABASE_NAME)
-    os.system(f'cat *.fna.gz >> {database}')
-    os.chdir(CWD)
+    else:
+        os.remove(DATABASE)
+        if oldies:
+            oldies_path=os.path.join(GENOMES_PATH,'oldies')
+            for oldy in oldies:
+                       os.system(f'cat {os.path.join(oldies_path, oldy)} >> {DATABASE}')
+        if any(fname.endswith('.fna.gz') for fname in os.listdir(GENOMES_PATH)):
+            os.system(f'cat {GENOMES} >> {DATABASE}')
 
-# def builder_alt():
-#     os.chdir(GENOMES_PATH)
-#     genomes=os.listdir('.')
-#     with gzip.open(DATABASE_NAME, 'wt') as database:
-#         for genome in genomes:
-#             with gzip.open(genome, 'rt') as current_genome:
-#                 for line in current_genome:
-#                     database.write(line)
-#     os.chdir(CWD)
-
+    for file in os.listdir(GENOMES_PATH):
+        if file.endswith('.fna.gz'):
+            shutil.move(os.path.join(GENOMES_PATH, file), os.path.join(GENOMES_PATH, 'oldies'))

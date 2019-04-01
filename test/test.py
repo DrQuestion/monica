@@ -9,11 +9,11 @@ if __name__=='__main__':
     print(f'Table processing and ftp selection took {time.time()-time0} seconds')
 
     time0=time.time()
-    test_fetcher.test_fetcher(t)
+    oldies=test_fetcher.test_fetcher(t)
     print(f'Genomes download took {time.time()-time0} seconds')
 
     time0=time.time()
-    test_database.test_database_builder()
+    test_database.test_database_builder(oldies)
     print(f'Database formation took {time.time()-time0} seconds')
 
     # time1=time.time()

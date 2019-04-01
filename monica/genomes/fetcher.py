@@ -73,27 +73,49 @@ def ftp_selector(mode=None, species=[]):
     return merged_table
 
 def fetcher(table):
+    oldies=[]
+
     if not os.path.exists(GENOMES_PATH):
         os.mkdir(GENOMES_PATH)
+        os.mkdir(os.path.join(GENOMES_PATH, 'oldies'))
+
     os.chdir(GENOMES_PATH)
+    old=os.listdir('./oldies')
 
-    for row in table.iterrows():
-        ftp=row[1]['ftp_path']
-        filename=ftp.split(sep='/')[-1]
-        new_header_components=[row[1][-1], row[1]['# assembly_accession']]
+    if not old:
+        for row in table.iterrows():
+            ftp=row[1]['ftp_path']
+            filename=ftp.split(sep='/')[-1]
+            new_header_components=[row[1][-1], row[1]['# assembly_accession'].split(sep='_')[-1]]
+            new_filename='_'.join(new_header_components)+'.fna.gz'
+            new_header = ':'.join(new_header_components)
+            print(f'Started {filename} download')
+            t0 = time.time()
+            wget.download(ftp)
+            header_modifier(filename, new_filename, new_header)
 
-        print(f'Started {filename} download')
-        t0=time.time()
-        wget.download(ftp)
+    else:
+        for row in table.iterrows():
+            ftp=row[1]['ftp_path']
+            filename=ftp.split(sep='/')[-1]
+            new_header_components=[row[1][-1], row[1]['# assembly_accession'].split(sep='_')[-1]]
+            new_filename='_'.join(new_header_components)+'.fna.gz'
 
-        header_modifier(filename, new_header_components)
-    print(f'Finished genomes download')
+            if new_filename in old:
+                oldies.append(new_filename)
+                print(f'{filename} already present in oldies as {new_filename}')
+
+            else:
+                new_header = ':'.join(new_header_components)
+                print(f'Started {filename} download')
+                wget.download(ftp)
+                header_modifier(filename, new_filename, new_header)
+
+    print(f'Finished genomes retrieval')
     os.chdir(CWD)
+    return old
 
-def header_modifier(file, new_header_components):
-    new_filename='_'.join(new_header_components)+'.fna.gz'
-    new_header=':'.join(new_header_components)
-
+def header_modifier(file, new_filename, new_header):
     with gzip.open(file, 'rt') as old, gzip.open(new_filename, 'wt') as new:
         for seq_record in SeqIO.parse(old, 'fasta'):
             seq_record.id=new_header

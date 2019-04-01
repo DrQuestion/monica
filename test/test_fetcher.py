@@ -5,7 +5,8 @@ def test_ftp_selector(mode=None, species=[]):
     return t
 
 def test_fetcher(table=None):
-    fetcher.fetcher(table=table)
+    oldies=fetcher.fetcher(table=table)
+    return oldies
 
 if __name__=='__main__':
     t=test_ftp_selector(mode='single', species=['Xylella fastidiosa'])
