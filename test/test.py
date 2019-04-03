@@ -1,6 +1,6 @@
 import time
 
-import test_database, test_fetcher
+import test_database, test_fetcher, test_aligner
 
 if __name__=='__main__':
 
@@ -16,6 +16,6 @@ if __name__=='__main__':
     test_database.test_database_builder(oldies)
     print(f'Database formation took {time.time()-time0} seconds')
 
-    # time1=time.time()
-    # test_database.test_database_builder_alt()
-    # print(time.time()-time1)
+    time0=time.time()
+    test_aligner.test_aligner_indexer()
+    print(f'Index building took {time.time()-time0} seconds')
