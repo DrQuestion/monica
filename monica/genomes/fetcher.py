@@ -1,6 +1,7 @@
 import os
 import gzip
 import time
+import datetime as dt
 
 import wget
 import pandas as pd
@@ -9,12 +10,15 @@ from Bio import SeqIO
 
 import monica.genomes.tables as tables
 
-ncbi=NCBITaxa()
 PARENTS=['Fungi','Oomycota','Bacteria','Archaea','Viruses','Viroids','Nematodes','Rhizaria','Alveolata','Heterokonta']
 GENOMES_PATH=os.path.join(os.path.dirname(__file__), 'genomes')
 CWD=os.getcwd()
+NCBI_TAXA_UPDATE_LOG='ncbi_taxa_update_log'
 
 def descendants_taxid_finder(species=[]):
+    ncbi = NCBITaxa()
+    if not ncbi_taxa_updated():
+        ncbi.update_taxonomy_database()
     descendants = []
     for specie in species:
         for i in ncbi.get_descendant_taxa(specie):
@@ -125,3 +129,14 @@ def header_modifier(file, new_filename, new_header):
             seq_record.id=new_header
             SeqIO.write(seq_record, new, 'fasta')
     os.remove(file)
+
+def ncbi_taxa_updated():
+    if not NCBI_TAXA_UPDATE_LOG in os.listdir(__file__):
+        return 0
+    with open (os.path.join(os.path.dirname(__file__), NCBI_TAXA_UPDATE_LOG), 'r') as log:
+        date = log.read()
+    date = dt.datetime.strptime(date, '%Y-%m-%d')
+    delta = dt.datetime.now() - date
+    if delta.days > 14:
+        return 0
+    return 1
