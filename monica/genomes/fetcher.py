@@ -18,6 +18,8 @@ NCBI_TAXA_UPDATE_LOG='ncbi_taxa_update_log'
 def descendants_taxid_finder(species=[]):
     ncbi = NCBITaxa()
     if not ncbi_taxa_updated():
+        with open(os.path.join(os.path.dirname(__file__), NCBI_TAXA_UPDATE_LOG), 'w+') as log:
+            log.write(str(dt.date.today()))
         ncbi.update_taxonomy_database()
     descendants = []
     for specie in species:
