@@ -6,14 +6,16 @@ import mappy
 
 from monica.genomes.database import DATABASE
 
-# db='/home/drq/Desktop/genome.fna'
-# query='/home/drq/Desktop/query.fa'
+IDXFILE=os.path.join(os.path.dirname(__file__), 'index.mmi')
 
-def indexer (database=DATABASE):
+def indexer (database=DATABASE, idx_file=False):
+    if idx_file:
+        index=mappy.Aligner(fn_idx_in=database, preset='map-ont', fn_idx_out=IDXFILE)
+        return index
     index = mappy.Aligner(fn_idx_in=database, preset='map-ont')
     return index
 
-def aligner (query_folder, index, alignment=dict(), genomes_length=dict(), mode=None):
+def aligner (query_folder, index, alignment=dict(), genomes_length=dict(), mode=None, overnight=False):
     #mode is for testing only
 
     os.chdir(query_folder)
@@ -23,7 +25,11 @@ def aligner (query_folder, index, alignment=dict(), genomes_length=dict(), mode=
         alignment[sample]=dict()
         for name, seq, qual in mappy.fastx_read(sample):
             for hit in index.map(seq):
+                #When do I cut secondary alignments?
                 tax_unit = hit.ctg.split(sep=':')[0]
+                if overnight:
+                    #taxunit becomes the genus
+                    tax_unit=tax_unit.split(sep='_')[0]
                 accession = hit.ctg.split(sep=':')[1]
                 if not accession in genomes_length:
                     genomes_length[accession] = hit.ctg_len
@@ -49,7 +55,6 @@ def aligner (query_folder, index, alignment=dict(), genomes_length=dict(), mode=
     return(alignment, genomes_length)
 
 def normalize(alignment, genomes_length):
-    #base per base normalization?
     for sample in alignment.keys():
         sample_total=0
         for taxunit, counter in alignment[sample].items():
@@ -66,8 +71,6 @@ def normalize(alignment, genomes_length):
 def allignment_to_data_frame (alignment):
     data_frame = pd.concat({k: pd.DataFrame(v).unstack() for k, v in alignment.items()}, axis=1)
     return data_frame
-
-#Implement to test if a count system based on sequenced bases works better/well too
 
 if __name__=='__main__':
     db='/home/drq/Desktop/temp/genome.fna'

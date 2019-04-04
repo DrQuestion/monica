@@ -19,3 +19,7 @@ if __name__=='__main__':
     time0=time.time()
     test_aligner.test_aligner_indexer()
     print(f'Index building took {time.time()-time0} seconds')
+
+    #time0 = time.time()
+    #test_aligner.test_aligner_indexer(idx_file=True)
+    #print(f'Index building with file took {time.time()-time0} seconds')

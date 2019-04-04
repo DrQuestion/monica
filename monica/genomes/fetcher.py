@@ -31,12 +31,16 @@ def ftp_selector(mode=None, species=[]):
 
     elif mode=='overnight':
         print ('Activated overnight mode')
+        genera=[]
         taxids=descendants_taxid_finder(PARENTS)
-        table = tables.importer(which='genbank')
+        table = tables.importer(which='refseq')
         merged_table = table.merge(taxids, on='taxid')
         for name in merged_table.loc[:, 'organism_name']:
-            species_name.append(name.split(sep=' ')[0])
-        merged_table['genera'] = species_name
+            splitted_name=name.split(sep=' ')
+            genera.append(splitted_name[0])
+            species_name.append('_'.join([splitted_name[0],splitted_name[1]]))
+        merged_table['genera'] = genera
+        merged_table['species_name']=species_name
         merged_table = merged_table.drop_duplicates(subset=['genera'], keep='last')
 
     elif not species:
