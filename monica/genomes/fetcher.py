@@ -10,6 +10,7 @@ from Bio import SeqIO
 
 import monica.genomes.tables as tables
 
+
 PARENTS=['Fungi','Oomycota','Bacteria','Archaea','Viruses','Viroids','Nematodes','Rhizaria','Alveolata','Heterokonta']
 GENOMES_PATH=os.path.join(os.path.dirname(__file__), 'genomes')
 OLDIES_PATH=os.path.join(GENOMES_PATH, 'oldies')
@@ -79,7 +80,7 @@ def ftp_selector(mode=None, species=[]):
         merged_table['species_name']=species_name
         merged_table=merged_table.drop_duplicates(subset=['species_name'], keep='last')
 
-    #modify ftps to obtain genomic dna file
+    # modify ftps to obtain genomic dna file
     for ftp in merged_table.loc[:, 'ftp_path']:
         filename=ftp.split(sep='/')[-1]+'_genomic.fna.gz'
         ftp_path_list.append('/'.join([ftp,filename]))
@@ -158,6 +159,8 @@ def ncbi_taxa_updated():
 
 
 def oldies_cleaner(new_genomes, old):
+    # When a genome with same accession prefix but different version is downloaded, the old version is deleted
+    # from the current database
     old_no_version=list(map(lambda genome: genome.split(sep='.')[0], old))
     for genome, genome_no_version in zip(old, old_no_version):
         if genome_no_version in new_genomes:

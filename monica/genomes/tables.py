@@ -4,6 +4,7 @@ import pandas as pd
 import wget
 import time
 
+
 TABLES_PATH=os.path.join(os.path.dirname(__file__), 'tables')
 REFSEQ_SUMMARY_FTP= 'ftp://ftp.ncbi.nlm.nih.gov/genomes/refseq/assembly_summary_refseq.txt'
 GENBANK_SUMMARY_FTP= 'ftp://ftp.ncbi.nlm.nih.gov/genomes/genbank/assembly_summary_genbank.txt'

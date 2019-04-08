@@ -5,7 +5,7 @@ import test_database, test_fetcher, test_aligner
 if __name__=='__main__':
 
     time0=time.time()
-    t=test_fetcher.test_ftp_selector(mode='all', species=['Xylella fastidiosa'])
+    t=test_fetcher.test_ftp_selector(mode='single', species=['Xylella'])
     print(f'Table processing and ftp selection took {time.time()-time0} seconds')
 
     time0=time.time()

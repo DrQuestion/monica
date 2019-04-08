@@ -6,6 +6,7 @@ import mappy
 
 from monica.genomes.database import DATABASE
 
+
 IDXFILE=os.path.join(os.path.dirname(__file__), 'index.mmi')
 
 
@@ -18,7 +19,7 @@ def indexer (database=DATABASE, idx_file=False):
 
 
 def aligner (query_folder, index, alignment=dict(), genomes_length=dict(), mode=None, overnight=False):
-    #mode is for testing only
+    # mode is for testing only
 
     os.chdir(query_folder)
     samples=os.listdir('.')
@@ -27,10 +28,10 @@ def aligner (query_folder, index, alignment=dict(), genomes_length=dict(), mode=
         alignment[sample]=dict()
         for name, seq, qual in mappy.fastx_read(sample):
             for hit in index.map(seq):
-                #When do I cut secondary alignments?
+                # When do I cut secondary alignments?
                 tax_unit = hit.ctg.split(sep=':')[0]
                 if overnight:
-                    #taxunit becomes the genus
+                    # taxunit becomes the genus
                     tax_unit=tax_unit.split(sep='_')[0]
                 accession = hit.ctg.split(sep=':')[1]
                 if not accession in genomes_length:
