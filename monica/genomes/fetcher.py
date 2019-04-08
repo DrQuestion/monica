@@ -12,8 +12,15 @@ import monica.genomes.tables as tables
 
 PARENTS=['Fungi','Oomycota','Bacteria','Archaea','Viruses','Viroids','Nematodes','Rhizaria','Alveolata','Heterokonta']
 GENOMES_PATH=os.path.join(os.path.dirname(__file__), 'genomes')
+OLDIES_PATH=os.path.join(GENOMES_PATH, 'oldies')
 CWD=os.getcwd()
+
 NCBI_TAXA_UPDATE_LOG='ncbi_taxa_update_log'
+NCBI_TAXA_DAYS_THRESHOLD=14
+
+OLDIES_LOG='oldies_log'
+OLDIE_DAYS_THRESHOLD=30
+
 
 def descendants_taxid_finder(species=[]):
     ncbi = NCBITaxa()
@@ -27,6 +34,7 @@ def descendants_taxid_finder(species=[]):
             descendants.append(str(i))
     taxids = pd.DataFrame(descendants, columns=['taxid'])
     return taxids
+
 
 def ftp_selector(mode=None, species=[]):
     species_name = []
@@ -82,14 +90,18 @@ def ftp_selector(mode=None, species=[]):
 
     return merged_table
 
+
 def fetcher(table):
     oldies=[]
 
     if not os.path.exists(GENOMES_PATH):
         os.mkdir(GENOMES_PATH)
-        os.mkdir(os.path.join(GENOMES_PATH, 'oldies'))
+        os.mkdir(OLDIES_PATH)
+        open(os.path.join(OLDIES_PATH, OLDIES_LOG), 'w').close()
+
 
     os.chdir(GENOMES_PATH)
+    oldies_cleaner()
     old=os.listdir('./oldies')
 
     if not old:
@@ -125,6 +137,7 @@ def fetcher(table):
     os.chdir(CWD)
     return old
 
+
 def header_modifier(file, new_filename, new_header):
     with gzip.open(file, 'rt') as old, gzip.open(new_filename, 'wt') as new:
         for seq_record in SeqIO.parse(old, 'fasta'):
@@ -132,13 +145,36 @@ def header_modifier(file, new_filename, new_header):
             SeqIO.write(seq_record, new, 'fasta')
     os.remove(file)
 
+
 def ncbi_taxa_updated():
-    if not NCBI_TAXA_UPDATE_LOG in os.listdir(__file__):
+    if not NCBI_TAXA_UPDATE_LOG in os.listdir(os.path.dirname(__file__)):
         return 0
     with open (os.path.join(os.path.dirname(__file__), NCBI_TAXA_UPDATE_LOG), 'r') as log:
         date = log.read()
     date = dt.datetime.strptime(date, '%Y-%m-%d')
     delta = dt.datetime.now() - date
-    if delta.days > 14:
+    if delta.days > NCBI_TAXA_DAYS_THRESHOLD:
         return 0
     return 1
+
+
+def oldies_cleaner():
+    with open(os.path.join(OLDIES_PATH,OLDIES_LOG), 'r') as log:
+        lines=log.readlines()
+    if not lines:
+        print('no oldies')
+        pass
+    else:
+        with open(os.path.join(OLDIES_PATH, OLDIES_LOG), 'w') as log:
+            for line in lines:
+                print(line)
+                oldie = line.strip('\n').split(sep=',')[0]
+                print(oldie)
+                date = line.strip('\n').split(sep=',')[1]
+                date = dt.datetime.strptime(date, '%Y-%m-%d')
+                delta = dt.datetime.now() - date
+                if delta.days > OLDIE_DAYS_THRESHOLD:
+                    os.remove(os.path.join(OLDIES_PATH, oldie))
+                    print(f'Removing {oldie}, it was {delta.days} days old')
+                else:
+                    log.write(line)

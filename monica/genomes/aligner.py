@@ -8,12 +8,14 @@ from monica.genomes.database import DATABASE
 
 IDXFILE=os.path.join(os.path.dirname(__file__), 'index.mmi')
 
+
 def indexer (database=DATABASE, idx_file=False):
     if idx_file:
         index=mappy.Aligner(fn_idx_in=database, preset='map-ont', fn_idx_out=IDXFILE)
         return index
     index = mappy.Aligner(fn_idx_in=database, preset='map-ont')
     return index
+
 
 def aligner (query_folder, index, alignment=dict(), genomes_length=dict(), mode=None, overnight=False):
     #mode is for testing only
@@ -52,7 +54,8 @@ def aligner (query_folder, index, alignment=dict(), genomes_length=dict(), mode=
                     else:
                         alignment[sample][tax_unit] = Counter({accession: hit.mlen})
 
-    return(alignment, genomes_length)
+    return alignment, genomes_length
+
 
 def normalize(alignment, genomes_length):
     for sample in alignment.keys():
@@ -66,11 +69,13 @@ def normalize(alignment, genomes_length):
             for accession, BPB in counter.items():
                 BPM=BPB/sample_total
                 alignment[sample][taxunit][accession]=BPM
-    return (alignment)
+    return alignment
+
 
 def allignment_to_data_frame (alignment):
     data_frame = pd.concat({k: pd.DataFrame(v).unstack() for k, v in alignment.items()}, axis=1)
     return data_frame
+
 
 if __name__=='__main__':
     db='/home/drq/Desktop/temp/genome.fna'

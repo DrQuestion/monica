@@ -2,6 +2,7 @@ import os
 import datetime as dt
 import pandas as pd
 import wget
+import time
 
 TABLES_PATH=os.path.join(os.path.dirname(__file__), 'tables')
 REFSEQ_SUMMARY_FTP= 'ftp://ftp.ncbi.nlm.nih.gov/genomes/refseq/assembly_summary_refseq.txt'
@@ -10,7 +11,9 @@ HEADERLINE=1
 USECOLS=[0,5,7,8,9,19]
 CWD=os.getcwd()
 
+
 def fetcher():
+    start=time.time()
     if not os.path.exists(TABLES_PATH):
         os.mkdir(TABLES_PATH)
     os.chdir(TABLES_PATH)
@@ -22,6 +25,7 @@ def fetcher():
         wget.download(GENBANK_SUMMARY_FTP)
         print('finished_fetching_tables')
     os.chdir(CWD)
+    print(f'Tables download took {time.time()-start} seconds')
 
 def importer(which=None):
     fetcher()
@@ -32,6 +36,7 @@ def importer(which=None):
         genbank_table = pd.read_csv(f'{TABLES_PATH}/{GENBANK_SUMMARY_FTP.split(sep="/")[-1]}', header=HEADERLINE, dtype='str', sep='\t', usecols=USECOLS)
         return genbank_table
     return 0
+
 
 def updated():
     if not os.listdir(TABLES_PATH):

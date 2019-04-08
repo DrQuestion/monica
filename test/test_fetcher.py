@@ -8,6 +8,8 @@ def test_fetcher(table=None):
     oldies=fetcher.fetcher(table=table)
     return oldies
 
+def test_oldies_cleaner():
+    fetcher.oldies_cleaner()
+
 if __name__=='__main__':
-    t=test_ftp_selector(mode='single', species=['Xylella fastidiosa'])
-    test_fetcher(t)
+    test_oldies_cleaner()
