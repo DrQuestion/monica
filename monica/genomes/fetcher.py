@@ -18,9 +18,6 @@ CWD=os.getcwd()
 NCBI_TAXA_UPDATE_LOG='ncbi_taxa_update_log'
 NCBI_TAXA_DAYS_THRESHOLD=14
 
-OLDIES_LOG='oldies_log'
-OLDIE_DAYS_THRESHOLD=30
-
 
 def descendants_taxid_finder(species=[]):
     ncbi = NCBITaxa()
@@ -93,16 +90,15 @@ def ftp_selector(mode=None, species=[]):
 
 def fetcher(table):
     oldies=[]
+    new_genomes=[]
 
     if not os.path.exists(GENOMES_PATH):
         os.mkdir(GENOMES_PATH)
         os.mkdir(OLDIES_PATH)
         open(os.path.join(OLDIES_PATH, OLDIES_LOG), 'w').close()
 
-
     os.chdir(GENOMES_PATH)
-    oldies_cleaner()
-    old=os.listdir('./oldies')
+    old=os.listdir(OLDIES_PATH)
 
     if not old:
         for row in table.iterrows():
@@ -125,6 +121,7 @@ def fetcher(table):
 
             if new_filename in old:
                 oldies.append(new_filename)
+                old.remove(new_filename)
                 print(f'{filename} already present in oldies as {new_filename}')
 
             else:
@@ -132,10 +129,12 @@ def fetcher(table):
                 print(f'Started {filename} download')
                 wget.download(ftp)
                 header_modifier(filename, new_filename, new_header)
+                new_genomes.append(new_filename.split(sep='.')[0])
 
     print(f'Finished genomes retrieval')
     os.chdir(CWD)
-    return old
+    oldies_cleaner(new_genomes, old)
+    return oldies
 
 
 def header_modifier(file, new_filename, new_header):
@@ -158,23 +157,9 @@ def ncbi_taxa_updated():
     return 1
 
 
-def oldies_cleaner():
-    with open(os.path.join(OLDIES_PATH,OLDIES_LOG), 'r') as log:
-        lines=log.readlines()
-    if not lines:
-        print('no oldies')
-        pass
-    else:
-        with open(os.path.join(OLDIES_PATH, OLDIES_LOG), 'w') as log:
-            for line in lines:
-                print(line)
-                oldie = line.strip('\n').split(sep=',')[0]
-                print(oldie)
-                date = line.strip('\n').split(sep=',')[1]
-                date = dt.datetime.strptime(date, '%Y-%m-%d')
-                delta = dt.datetime.now() - date
-                if delta.days > OLDIE_DAYS_THRESHOLD:
-                    os.remove(os.path.join(OLDIES_PATH, oldie))
-                    print(f'Removing {oldie}, it was {delta.days} days old')
-                else:
-                    log.write(line)
+def oldies_cleaner(new_genomes, old):
+    old_no_version=list(map(lambda genome: genome.split(sep='.')[0], old))
+    for genome, genome_no_version in zip(old, old_no_version):
+        if genome_no_version in new_genomes:
+            os.remove(os.path.join(OLDIES_PATH, genome))
+            print(f'Removing {genome}, new version found')

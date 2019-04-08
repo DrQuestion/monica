@@ -1,7 +1,7 @@
 import os
 import shutil
 import datetime as dt
-from monica.genomes.fetcher import GENOMES_PATH, OLDIES_PATH, OLDIES_LOG
+from monica.genomes.fetcher import GENOMES_PATH, OLDIES_PATH
 
 GENOMES=os.path.join(GENOMES_PATH, '*.fna.gz')
 DATABASE_PATH=os.path.join(GENOMES_PATH, 'database')
@@ -17,9 +17,8 @@ def builder(oldies, keep_genomes=True):
     else:
         os.remove(DATABASE)
         if oldies:
-            oldies_path=os.path.join(GENOMES_PATH,'oldies')
             for oldie in oldies:
-                       os.system(f'cat {os.path.join(oldies_path, oldie)} >> {DATABASE}')
+                os.system(f'cat {os.path.join(OLDIES_PATH, oldie)} >> {DATABASE}')
         if any(fname.endswith('.fna.gz') for fname in os.listdir(GENOMES_PATH)):
             os.system(f'cat {GENOMES} >> {DATABASE}')
 
@@ -27,16 +26,10 @@ def builder(oldies, keep_genomes=True):
     if keep_genomes:
         for file in os.listdir(GENOMES_PATH):
             if file.endswith('.fna.gz'):
-                shutil.move(os.path.join(GENOMES_PATH, file), os.path.join(GENOMES_PATH, 'oldies'))
-                with open(os.path.join(OLDIES_PATH, OLDIES_LOG), 'a') as log:
-                    log.write(f'{file},{str(dt.date.today())}')
+                shutil.move(os.path.join(GENOMES_PATH, file), OLDIES_PATH)
                 #would raise errors if same genome downloaded twice, but it should not happen for monica's structure
                 #looks for an old genome before downloading it
     else:
         for file in os.listdir(GENOMES_PATH):
             if file.endswith('.fna.gz'):
                 os.remove(file)
-
-
-def updated():
-    pass
