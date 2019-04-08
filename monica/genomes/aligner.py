@@ -8,7 +8,7 @@ import mappy
 IDXFILE=os.path.join(os.path.dirname(__file__), 'index.mmi')
 
 
-def indexer (database, idx_file=False):
+def indexer(database, idx_file=False):
     if idx_file:
         index=mappy.Aligner(fn_idx_in=database, preset='map-ont', fn_idx_out=IDXFILE)
         return index
@@ -16,7 +16,7 @@ def indexer (database, idx_file=False):
     return index
 
 
-def aligner (query_folder, index, alignment=dict(), genomes_length=dict(), mode=None, overnight=False):
+def aligner(query_folder, index, alignment=dict(), genomes_length=dict(), mode=None, overnight=False):
     # mode is for testing only
 
     os.chdir(query_folder)
@@ -71,13 +71,6 @@ def normalize(alignment, genomes_length):
     return alignment
 
 
-def allignment_to_data_frame (alignment):
+def allignment_to_data_frame(alignment):
     data_frame = pd.concat({k: pd.DataFrame(v).unstack() for k, v in alignment.items()}, axis=1)
     return data_frame
-
-
-if __name__=='__main__':
-    db='/home/drq/Desktop/temp/genome.fna'
-    query='/home/drq/Desktop/temp/query'
-    al=aligner(query, db)
-    print(al)
