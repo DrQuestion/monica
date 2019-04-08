@@ -4,13 +4,11 @@ from collections import Counter
 import pandas as pd
 import mappy
 
-from monica.genomes.database import DATABASE
-
 
 IDXFILE=os.path.join(os.path.dirname(__file__), 'index.mmi')
 
 
-def indexer (database=DATABASE, idx_file=False):
+def indexer (database, idx_file=False):
     if idx_file:
         index=mappy.Aligner(fn_idx_in=database, preset='map-ont', fn_idx_out=IDXFILE)
         return index

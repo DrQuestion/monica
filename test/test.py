@@ -13,11 +13,11 @@ if __name__=='__main__':
     print(f'Genomes download took {time.time()-time0} seconds')
 
     time0=time.time()
-    test_database.test_database_builder(oldies)
+    db=test_database.test_database_builder(oldies)
     print(f'Database formation took {time.time()-time0} seconds')
 
     time0=time.time()
-    test_aligner.test_aligner_indexer()
+    idx=test_aligner.test_aligner_indexer(db)
     print(f'Index building took {time.time()-time0} seconds')
 
     #time0 = time.time()

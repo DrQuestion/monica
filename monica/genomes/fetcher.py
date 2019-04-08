@@ -96,7 +96,6 @@ def fetcher(table):
     if not os.path.exists(GENOMES_PATH):
         os.mkdir(GENOMES_PATH)
         os.mkdir(OLDIES_PATH)
-        open(os.path.join(OLDIES_PATH, OLDIES_LOG), 'w').close()
 
     os.chdir(GENOMES_PATH)
     old=os.listdir(OLDIES_PATH)
