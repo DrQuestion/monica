@@ -8,6 +8,7 @@ import monica.genomes.aligner as galigner
 
 def main(argv):
     opts, args = getopt.getopt(argv[1:], '')
+    pass
 
 
 if __name__=='__main__':

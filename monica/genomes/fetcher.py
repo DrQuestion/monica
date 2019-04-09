@@ -79,6 +79,7 @@ def ftp_selector(mode=None, species=[]):
                    '_'.join([name.split(sep=' ')[0], name.split(sep=' ')[1]]))
         merged_table['species_name']=species_name
         merged_table=merged_table.drop_duplicates(subset=['species_name'], keep='last')
+        # TODO problem with keeping last? Xylella fastidiosa genome (003352785.1) too short
 
     # modify ftps to obtain genomic dna file
     for ftp in merged_table.loc[:, 'ftp_path']:

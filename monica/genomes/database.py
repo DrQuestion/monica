@@ -5,7 +5,7 @@ from monica.genomes.fetcher import GENOMES_PATH, OLDIES_PATH
 
 GENOMES=os.path.join(GENOMES_PATH, '*.fna.gz')
 DATABASE_PATH=os.path.join(GENOMES_PATH, 'database')
-DATABASE_NAME='guests.fna.gz'
+DATABASE_NAME='database.fna.gz'
 
 
 def builder(oldies, database_name=DATABASE_NAME, keep_genomes=True):
