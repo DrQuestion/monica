@@ -26,22 +26,24 @@ if __name__ == '__main__':
     db=test_database.test_database_builder(oldies)
     print(f'Database formation took {time.time()-time0} seconds')
 
-    # shutil.rmtree(os.path.join(query_folder, 'mapped'))
-    # shutil.rmtree(os.path.join(query_folder, 'unmapped'))
+    shutil.rmtree(os.path.join(query_folder, 'mapped'))
+    shutil.rmtree(os.path.join(query_folder, 'unmapped'))
 
     time0=time.time()
     idx=test_aligner.test_aligner_indexer(db, n_threads=7)
-    print(f'Index building 3 threads took {time.time()-time0} seconds')
+    print(f'Index building took {time.time()-time0} seconds')
 
     time0 = time.time()
     print('started alignment')
-    alignment = test_aligner.test_aligner_aligner(query_folder, idx)
-    print(f'Alignment 3 threads took {time.time()-time0} seconds')
+    alignment = test_aligner.test_aligner_multi_threaded_aligner(query_folder, idx)
+    print(f'Alignment took {time.time()-time0} seconds')
+    print(alignment)
 
-    # time0=time.time()
-    # alignment = test_aligner.test_aligner_normalizer(alignment)
-    # print(f'Normalization took {time.time()-time0} seconds')
-    #
-    # time0=time.time()
-    # df= test_aligner.test_aligner_alignment_to_data_frame(alignment)
-    # print(f'Dataframe conversion took {time.time()-time0} seconds')
+    time0=time.time()
+    alignment = test_aligner.test_aligner_normalizer(alignment)
+    print(f'Normalization took {time.time()-time0} seconds')
+
+    time0=time.time()
+    df= test_aligner.test_aligner_alignment_to_data_frame(alignment)
+    print(f'Dataframe conversion took {time.time()-time0} seconds')
+    print(df)
