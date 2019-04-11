@@ -1,6 +1,7 @@
 import os
 import gzip
 import time
+import pickle
 import datetime as dt
 
 import wget
@@ -79,7 +80,6 @@ def ftp_selector(mode=None, species=[]):
                    '_'.join([name.split(sep=' ')[0], name.split(sep=' ')[1]]))
         merged_table['species_name']=species_name
         merged_table=merged_table.drop_duplicates(subset=['species_name'], keep='last')
-        # TODO problem with keeping last? Xylella fastidiosa genome (003352785.1) too short
 
     # modify ftps to obtain genomic dna file
     for ftp in merged_table.loc[:, 'ftp_path']:
@@ -91,17 +91,18 @@ def ftp_selector(mode=None, species=[]):
 
 
 def fetcher(table):
-    oldies=[]
-    new_genomes=[]
+    oldies = []
+    new_genomes = []
 
     if not os.path.exists(GENOMES_PATH):
         os.mkdir(GENOMES_PATH)
         os.mkdir(OLDIES_PATH)
 
     os.chdir(GENOMES_PATH)
-    old=os.listdir(OLDIES_PATH)
+    old = os.listdir(OLDIES_PATH)
 
     if not old:
+        genomes_length = dict()
         for row in table.iterrows():
             ftp=row[1]['ftp_path']
             filename=ftp.split(sep='/')[-1]
@@ -111,9 +112,12 @@ def fetcher(table):
             print(f'Started {filename} download')
             t0 = time.time()
             wget.download(ftp)
-            header_modifier(filename, new_filename, new_header)
+            genome_length = header_modifier(filename, new_filename, new_header)
+            genomes_length[new_header_components[1]] = genome_length
+        pickle.dump(genomes_length, open(os.path.join(OLDIES_PATH, 'genomes_length.pkl'), 'wb'))
 
     else:
+        genomes_length = pickle.load(open(os.path.join(OLDIES_PATH, 'genomes_length.pkl'), 'rb'))
         for row in table.iterrows():
             ftp=row[1]['ftp_path']
             filename=ftp.split(sep='/')[-1]
@@ -129,8 +133,10 @@ def fetcher(table):
                 new_header = ':'.join(new_header_components)
                 print(f'Started {filename} download')
                 wget.download(ftp)
-                header_modifier(filename, new_filename, new_header)
+                genome_length = header_modifier(filename, new_filename, new_header)
                 new_genomes.append(new_filename.split(sep='.')[0])
+                genomes_length[new_header_components[1]] = genome_length
+        pickle.dump(genomes_length, open(os.path.join(OLDIES_PATH, 'genomes_length.pkl'), 'wb'))
 
     print(f'Finished genomes retrieval')
     os.chdir(CWD)
@@ -139,11 +145,14 @@ def fetcher(table):
 
 
 def header_modifier(file, new_filename, new_header):
+    genome_length=0
     with gzip.open(file, 'rt') as old, gzip.open(new_filename, 'wt') as new:
         for seq_record in SeqIO.parse(old, 'fasta'):
             seq_record.id=new_header
+            genome_length += len(seq_record)
             SeqIO.write(seq_record, new, 'fasta')
     os.remove(file)
+    return genome_length
 
 
 def ncbi_taxa_updated():
@@ -162,7 +171,11 @@ def oldies_cleaner(new_genomes, old):
     # When a genome with same accession prefix but different version is downloaded, the old version is deleted
     # from the current database
     old_no_version=list(map(lambda genome: genome.split(sep='.')[0], old))
+    genomes_length=pickle.load(open(os.path.join(OLDIES_PATH, 'genomes_length.pkl'), 'rb'))
     for genome, genome_no_version in zip(old, old_no_version):
         if genome_no_version in new_genomes:
             os.remove(os.path.join(OLDIES_PATH, genome))
+            accession=genome[:-7].split(sep='_')[-1]
+            print(genomes_length.pop(accession))
             print(f'Removing {genome}, new version found')
+    pickle.dump(genomes_length, open(os.path.join(OLDIES_PATH, 'genomes_length.pkl'), 'wb'))

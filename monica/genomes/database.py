@@ -28,6 +28,7 @@ def builder(oldies, database_name=DATABASE_NAME, keep_genomes=True):
                 # would raise errors if same genome downloaded twice, but it should not happen for monica's structure
                 # looks for an old genome before downloading it
     else:
+        os.remove(os.path.join(OLDIES_PATH, 'genomes_length.pkl'))
         for file in os.listdir(GENOMES_PATH):
             if file.endswith('.fna.gz'):
                 os.remove(file)

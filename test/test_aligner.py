@@ -2,20 +2,19 @@ import pickle
 from context import aligner
 
 
-def test_aligner_indexer(database, idx_file=False):
-    idx = aligner.indexer(database, idx_file=idx_file)
+def test_aligner_indexer(database, idx_file=False, n_threads=None):
+    idx = aligner.indexer(database, idx_file=idx_file, n_threads=n_threads)
     return idx
 
 
 def test_aligner_aligner(query_folder, index, mode='basic'):
-    alignment, genomes_length = aligner.aligner(query_folder, index, mode=mode)
+    alignment = aligner.aligner(query_folder, index, mode=mode)
     pickle.dump(alignment, open('/home/drq/Desktop/al.pkl', 'wb'))
-    pickle.dump(genomes_length, open('/home/drq/Desktop/gl.pkl', 'wb'))
-    return alignment, genomes_length
+    return alignment
 
 
-def test_aligner_normalize(alignment, genomes_length):
-    alignment = aligner.normalize(alignment, genomes_length)
+def test_aligner_normalizer(alignment):
+    alignment = aligner.normalizer(alignment)
     pickle.dump(alignment, open('/home/drq/Desktop/norm_al.pkl', 'wb'))
     return alignment
 
