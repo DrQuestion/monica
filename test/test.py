@@ -1,6 +1,7 @@
 import os
 import time
 import shutil
+import pickle
 
 import test_aligner, test_database, test_fetcher
 
@@ -40,10 +41,12 @@ if __name__ == '__main__':
     print(alignment)
 
     time0=time.time()
+    alignment=pickle.load(open('/home/drq/PycharmProjects/tesi/monica/monica/genomes/alignment.pkl', 'rb'))
     alignment = test_aligner.test_aligner_normalizer(alignment)
     print(f'Normalization took {time.time()-time0} seconds')
 
     time0=time.time()
     df= test_aligner.test_aligner_alignment_to_data_frame(alignment)
     print(f'Dataframe conversion took {time.time()-time0} seconds')
-    print(df)
+
+
