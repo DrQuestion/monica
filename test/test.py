@@ -16,7 +16,7 @@ if __name__ == '__main__':
     query_folder='/home/drq/Desktop/temp/query'
 
     time0=time.time()
-    t=test_fetcher.test_ftp_selector(mode='single', species=['Fusarium verticillioides'])
+    t=test_fetcher.test_ftp_selector(mode='all', species=['Verticillium dahliae'])
     print(f'Table processing and ftp selection took {time.time()-time0} seconds')
 
     time0=time.time()

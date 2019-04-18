@@ -99,6 +99,8 @@ def fetcher(table, oldies_path=OLDIES_PATH):
     os.chdir(GENOMES_PATH)
     old = os.listdir(oldies_path)
 
+    total_time=0
+
     if not old:
         current_genomes_length = dict()
         for row in table.iterrows():
@@ -109,7 +111,8 @@ def fetcher(table, oldies_path=OLDIES_PATH):
             new_header = ':'.join(new_header_components)
             print(f'Started {filename} download')
             wget.download(ftp)
-            genome_length = header_modifier(filename, new_filename, new_header)
+            genome_length, t1 = header_modifier(filename, new_filename, new_header)
+            total_time+=t1
             current_genomes_length[new_header_components[1]] = genome_length
         pickle.dump(current_genomes_length, open(os.path.join(GENOMES_PATH, 'current_genomes_length.pkl'), 'wb'))
 
@@ -132,19 +135,22 @@ def fetcher(table, oldies_path=OLDIES_PATH):
                 new_header = ':'.join(new_header_components)
                 print(f'Started {filename} download')
                 wget.download(ftp)
-                genome_length = header_modifier(filename, new_filename, new_header)
+                genome_length, t1 = header_modifier(filename, new_filename, new_header)
+                total_time+=t1
                 new_genomes.append(new_filename.split(sep='.')[0])
                 current_genomes_length[new_header_components[1]] = genome_length
                 # genomes_length[new_header_components[1]] = genome_length
         pickle.dump(current_genomes_length, open(os.path.join(GENOMES_PATH, 'current_genomes_length.pkl'), 'wb'))
 
     print(f'Finished genomes retrieval')
+    print(f'Total time for genome rewriting took {total_time} seconds')
     os.chdir(CWD)
     oldies_cleaner(new_genomes, old, oldies_path)
     return oldies
 
 
 def header_modifier(file, new_filename, new_header):
+    t0=time.time()
     genome_length=0
     with gzip.open(file, 'rt') as old, gzip.open(new_filename, 'wt') as new:
         for seq_record in SeqIO.parse(old, 'fasta'):
@@ -152,7 +158,8 @@ def header_modifier(file, new_filename, new_header):
             genome_length += len(seq_record)
             SeqIO.write(seq_record, new, 'fasta')
     os.remove(file)
-    return genome_length
+    t1=time.time()-t0
+    return genome_length, t1
 
 
 def ncbi_taxa_updated():

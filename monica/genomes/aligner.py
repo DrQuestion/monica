@@ -30,7 +30,7 @@ def multi_threaded_aligner(query_folder, index, mode=None, overnight=False, n_th
 
     os.chdir(query_folder)
 
-    samples = os.listdir('.')
+    samples = [file for file in os.listdir('.') if file.endswith('fastq')]
     samples_name = list(map(lambda sample_name: sample_name.split('.')[0], samples))
 
     mapped_folder = os.path.join(query_folder, mapped_files_folder)
