@@ -1,16 +1,10 @@
-import pickle
-
-import pandas as pd
+import os
 import numpy as np
 import plotly.offline as py
 import plotly.graph_objs as go
 import matplotlib.pyplot as mplt
 
-from monica.genomes.aligner import ALIGNMENT_PICKLE, normalizer, alignment_to_data_frame
 
-
-ALIGNMENT = normalizer(pickle.load(open(ALIGNMENT_PICKLE, 'rb'))) #if wish to change to not normalized have to switch here, but wouldn't make sense
-DATAFRAME = alignment_to_data_frame(ALIGNMENT)
 OPACITY = 0.75
 
 
@@ -21,7 +15,7 @@ OPACITY = 0.75
 # TODO: (fix by clicking + highlighting the selected bar?)
 
 
-def dataframe_by_taxunit(dataframe=DATAFRAME):
+def _by_taxunit(dataframe):
     by_taxunit=dict()
     for index, series in dataframe.iterrows():
         taxunit=index[0]
@@ -45,14 +39,17 @@ def color_generator(n_elements, palette):
     return spaces, lines
 
 
-def plotter(alignment, palette='jet'):
-    x = list(ALIGNMENT.keys())
+def plotter(norm_alignment, alignment_df, palette='jet', host=None, output_folder=None):
+    x = list(norm_alignment.keys())
+    alignment_by_taxunit = _by_taxunit(alignment_df)
     bars = []
-    colors_spaces, colors_lines = color_generator(len(alignment), palette)
-    for taxunit, color_space, color_line in zip(alignment.keys(), colors_spaces, colors_lines):
+    colors_spaces, colors_lines = color_generator(len(alignment_by_taxunit), palette)
+    for taxunit, color_space, color_line in zip(alignment_by_taxunit.keys(), colors_spaces, colors_lines):
+        if taxunit == host:
+            taxunit += '_(host)'
         bars.append(go.Bar(
             x=x,
-            y=list(alignment[taxunit]),
+            y=list(alignment_by_taxunit[taxunit]),
             name=taxunit,
             marker=dict(
                 color=color_space,
@@ -75,10 +72,4 @@ def plotter(alignment, palette='jet'):
     )
 
     fig = go.Figure(data=bars, layout=layout)
-    py.plot(fig, filename='barplot')
-
-
-if __name__ == '__main__':
-
-    df=dataframe_by_taxunit()
-    plotter(df)
+    py.plot(fig, filename=os.path.join(output_folder, 'bar_plot.html'))

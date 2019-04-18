@@ -8,11 +8,9 @@ import pandas as pd
 import mappy
 from Bio import SeqIO
 
-from monica.genomes.fetcher import OLDIES_PATH
-
+from .fetcher import GENOMES_PATH
 
 BEST_N = 1
-N_THREADS = 8
 IDXFILE = os.path.join(os.path.dirname(__file__), 'index.mmi')
 
 ALIGNMENT_PICKLE_FILENAME = 'alignment.pkl'
@@ -22,16 +20,14 @@ MAPPED_FILES_FOLDER = 'mapped'
 UNMAPPED_FILES_FOLDER = 'unmapped'
 
 
-def indexer(database, n_threads=N_THREADS, idx_file=False):
-    if idx_file:
-        index = mappy.Aligner(fn_idx_in=database, preset='map-ont', best_n=BEST_N, n_threads=n_threads, fn_idx_out=IDXFILE)
-        return index
+def indexer(database, n_threads=None):
     index = mappy.Aligner(fn_idx_in=database, preset='map-ont', best_n=BEST_N, n_threads=n_threads)
     return index
 
 
-def multi_threaded_aligner(query_folder, index, mode=None, overnight=False, n_threads=N_THREADS,
+def multi_threaded_aligner(query_folder, index, mode=None, overnight=False, n_threads=None,
                            mapped_files_folder=MAPPED_FILES_FOLDER, unmapped_files_folder=UNMAPPED_FILES_FOLDER):
+
     os.chdir(query_folder)
 
     samples = os.listdir('.')
@@ -39,8 +35,9 @@ def multi_threaded_aligner(query_folder, index, mode=None, overnight=False, n_th
 
     mapped_folder = os.path.join(query_folder, mapped_files_folder)
     unmapped_folder = os.path.join(query_folder, unmapped_files_folder)
-    os.mkdir(mapped_folder)
-    os.mkdir(unmapped_folder)
+    if not os.path.exists(mapped_folder):
+        os.mkdir(mapped_folder)
+        os.mkdir(unmapped_folder)
 
     pool = ThreadPool(n_threads)
 
@@ -69,6 +66,8 @@ def aligner(sample, sample_name, index, mode=None, overnight=False, mapped_folde
                         tax_unit = tax_unit.split(sep='_')[0]
                     accession = hit.ctg.split(sep=':')[1]
 
+                    # TODO: Implement a way to keep them all and plot them alternatively at the end
+
                     if mode == 'basic':
                         if tax_unit in sample_alignment:
                             sample_alignment[tax_unit].update({accession: 1})
@@ -93,7 +92,7 @@ def aligner(sample, sample_name, index, mode=None, overnight=False, mapped_folde
                 SeqIO.write(seq_record, unmapped, 'fasta')
 
     print(f'{sample} done')
-
+    os.remove(sample)
     return sample_alignment, sample_name
 
 
@@ -120,7 +119,7 @@ def alignment_update(results):
 
 
 def normalizer(alignment):
-    genomes_length = pickle.load(open(os.path.join(OLDIES_PATH, 'genomes_length.pkl'), 'rb'))
+    genomes_length = pickle.load(open(os.path.join(GENOMES_PATH, 'current_genomes_length.pkl'), 'rb'))
     for sample in alignment.keys():
         sample_total = 0
         for tax_unit, counter in alignment[sample].items():
@@ -135,6 +134,7 @@ def normalizer(alignment):
     return alignment
 
 
-def alignment_to_data_frame(alignment):
+def alignment_to_data_frame(alignment, output_folder=None):
     data_frame = pd.concat({k: pd.DataFrame(v).unstack() for k, v in alignment.items()}, axis=1).dropna(how='all')
+    pd.DataFrame.to_csv(data_frame, output_folder, sep='\t')
     return data_frame

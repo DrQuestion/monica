@@ -9,7 +9,7 @@ import pandas as pd
 from ete3 import NCBITaxa
 from Bio import SeqIO
 
-import monica.genomes.tables as tables
+from . import tables
 
 
 PARENTS=['Fungi','Oomycota','Bacteria','Archaea','Viruses','Viroids','Nematodes','Rhizaria','Alveolata','Heterokonta']
@@ -39,10 +39,7 @@ def ftp_selector(mode=None, species=[]):
     species_name = []
     ftp_path_list = []
 
-    if not mode in ['single', 'all', 'overnight']:
-        raise Exception('No mode or wrong mode specified. Please select one among the following: single, all or overnight')
-
-    elif mode=='overnight':
+    if mode == 'overnight':
         print ('Activated overnight mode')
         genera=[]
         taxids=descendants_taxid_finder(PARENTS)
@@ -60,7 +57,7 @@ def ftp_selector(mode=None, species=[]):
         # only when specifically wanted single or all mode, but no species inserted
         raise Exception('You did not specify any specie. Wish to run overnight mode?')
 
-    elif mode=='all':
+    elif mode == 'all':
         print('Activated all mode')
         taxids = descendants_taxid_finder(species)
         table=tables.importer(which='genbank')
@@ -70,7 +67,7 @@ def ftp_selector(mode=None, species=[]):
                 '_'.join([name.split(sep=' ')[0], name.split(sep=' ')[1]]))
         merged_table['species_name'] = species_name
 
-    elif mode=='single':
+    elif mode == 'single':
         print ('Activated single mode')
         taxids=descendants_taxid_finder(species)
         table=tables.importer(which='refseq')
@@ -83,26 +80,27 @@ def ftp_selector(mode=None, species=[]):
 
     # modify ftps to obtain genomic dna file
     for ftp in merged_table.loc[:, 'ftp_path']:
-        filename=ftp.split(sep='/')[-1]+'_genomic.fna.gz'
-        ftp_path_list.append('/'.join([ftp,filename]))
-    merged_table.loc[:, 'ftp_path']=ftp_path_list
+        filename = ftp.split(sep='/')[-1]+'_genomic.fna.gz'
+        ftp_path_list.append('/'.join([ftp, filename]))
+    merged_table.loc[:, 'ftp_path'] = ftp_path_list
 
     return merged_table
 
 
-def fetcher(table):
+def fetcher(table, oldies_path=OLDIES_PATH):
     oldies = []
     new_genomes = []
 
     if not os.path.exists(GENOMES_PATH):
         os.mkdir(GENOMES_PATH)
-        os.mkdir(OLDIES_PATH)
+    if not os.path.exists(oldies_path):
+        os.mkdir(oldies_path)
 
     os.chdir(GENOMES_PATH)
-    old = os.listdir(OLDIES_PATH)
+    old = os.listdir(oldies_path)
 
     if not old:
-        genomes_length = dict()
+        current_genomes_length = dict()
         for row in table.iterrows():
             ftp=row[1]['ftp_path']
             filename=ftp.split(sep='/')[-1]
@@ -110,14 +108,14 @@ def fetcher(table):
             new_filename='_'.join(new_header_components)+'.fna.gz'
             new_header = ':'.join(new_header_components)
             print(f'Started {filename} download')
-            t0 = time.time()
             wget.download(ftp)
             genome_length = header_modifier(filename, new_filename, new_header)
-            genomes_length[new_header_components[1]] = genome_length
-        pickle.dump(genomes_length, open(os.path.join(OLDIES_PATH, 'genomes_length.pkl'), 'wb'))
+            current_genomes_length[new_header_components[1]] = genome_length
+        pickle.dump(current_genomes_length, open(os.path.join(GENOMES_PATH, 'current_genomes_length.pkl'), 'wb'))
 
     else:
-        genomes_length = pickle.load(open(os.path.join(OLDIES_PATH, 'genomes_length.pkl'), 'rb'))
+        genomes_length = pickle.load(open(os.path.join(oldies_path, 'genomes_length.pkl'), 'rb'))
+        current_genomes_length = dict()
         for row in table.iterrows():
             ftp=row[1]['ftp_path']
             filename=ftp.split(sep='/')[-1]
@@ -127,6 +125,7 @@ def fetcher(table):
             if new_filename in old:
                 oldies.append(new_filename)
                 old.remove(new_filename)
+                current_genomes_length[new_header_components[1]] = genomes_length[new_header_components[1]]
                 print(f'{filename} already present in oldies as {new_filename}')
 
             else:
@@ -135,12 +134,13 @@ def fetcher(table):
                 wget.download(ftp)
                 genome_length = header_modifier(filename, new_filename, new_header)
                 new_genomes.append(new_filename.split(sep='.')[0])
-                genomes_length[new_header_components[1]] = genome_length
-        pickle.dump(genomes_length, open(os.path.join(OLDIES_PATH, 'genomes_length.pkl'), 'wb'))
+                current_genomes_length[new_header_components[1]] = genome_length
+                # genomes_length[new_header_components[1]] = genome_length
+        pickle.dump(current_genomes_length, open(os.path.join(GENOMES_PATH, 'current_genomes_length.pkl'), 'wb'))
 
     print(f'Finished genomes retrieval')
     os.chdir(CWD)
-    oldies_cleaner(new_genomes, old)
+    oldies_cleaner(new_genomes, old, oldies_path)
     return oldies
 
 
@@ -167,15 +167,14 @@ def ncbi_taxa_updated():
     return 1
 
 
-def oldies_cleaner(new_genomes, old):
+def oldies_cleaner(new_genomes, old, oldies_path):
     # When a genome with same accession prefix but different version is downloaded, the old version is deleted
     # from the current database
     old_no_version=list(map(lambda genome: genome.split(sep='.')[0], old))
-    genomes_length=pickle.load(open(os.path.join(OLDIES_PATH, 'genomes_length.pkl'), 'rb'))
+    genomes_length=pickle.load(open(os.path.join(oldies_path, 'genomes_length.pkl'), 'rb'))
     for genome, genome_no_version in zip(old, old_no_version):
         if genome_no_version in new_genomes:
-            os.remove(os.path.join(OLDIES_PATH, genome))
+            os.remove(os.path.join(oldies_path, genome))
             accession=genome[:-7].split(sep='_')[-1]
-            print(genomes_length.pop(accession))
             print(f'Removing {genome}, new version found')
-    pickle.dump(genomes_length, open(os.path.join(OLDIES_PATH, 'genomes_length.pkl'), 'wb'))
+    pickle.dump(genomes_length, open(os.path.join(oldies_path, 'genomes_length.pkl'), 'wb'))
