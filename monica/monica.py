@@ -49,6 +49,8 @@ def main():
         output_folder = args.output_folder
     else:
         output_folder = os.path.join(input_folder, 'monica_output')
+    if not os.path.exists(output_folder):
+        os.mkdir(output_folder)
     host = args.host_specie
     guests = args.guest_species
     if guests:
@@ -84,7 +86,7 @@ def main():
     alignment_df = galigner.alignment_to_data_frame(norm_alignment, output_folder=output_folder)
 
     # Plotting
-    barplot.plotter(norm_alignment, alignment_df, host=host)
+    barplot.plotter(norm_alignment, alignment_df, host=host, output_folder=output_folder)
 
 
 if __name__ == '__main__':

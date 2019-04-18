@@ -72,4 +72,4 @@ def plotter(norm_alignment, alignment_df, palette='jet', host=None, output_folde
     )
 
     fig = go.Figure(data=bars, layout=layout)
-    py.plot(fig, filename=os.path.join(output_folder, 'bar_plot.html'))
+    py.plot(fig, filename=os.path.join(output_folder, 'monica.barplot.html'))

@@ -134,7 +134,7 @@ def normalizer(alignment):
     return alignment
 
 
-def alignment_to_data_frame(alignment, output_folder=None):
+def alignment_to_data_frame(alignment, output_folder=None, filename='monica.dataframe'):
     data_frame = pd.concat({k: pd.DataFrame(v).unstack() for k, v in alignment.items()}, axis=1).dropna(how='all')
-    pd.DataFrame.to_csv(data_frame, output_folder, sep='\t')
+    pd.DataFrame.to_csv(data_frame, os.path.join(output_folder, filename), sep='\t')
     return data_frame
