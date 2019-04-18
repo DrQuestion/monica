@@ -1,3 +1,4 @@
+import os
 import argparse
 
 import genomes.fetcher as gfetcher
@@ -42,7 +43,10 @@ def main():
         input_folder = args.query_folder
     else:
         input_folder = args.fast5_folder
-    output_folder = args.output_folder
+    if args.output_folder:
+        output_folder = args.output_folder
+    else:
+        output_folder = os.path.join(input_folder, 'monica_output')
     host = args.host_specie
     guests = args.guest_species
     if guests:

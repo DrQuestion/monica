@@ -16,7 +16,8 @@ def builder(oldies, database_name=DATABASE_NAME, keep_genomes=None, oldies_path=
         os.mkdir(DATABASE_PATH)
         os.system(f'cat {GENOMES} >> {database}')
     else:
-        os.remove(database)
+        if os.path.isfile(database):
+            os.remove(database)
         if oldies:
             for oldie in oldies:
                 os.system(f'cat {os.path.join(oldies_path, oldie)} >> {database}')
