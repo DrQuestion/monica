@@ -43,6 +43,7 @@ def plotter(norm_alignment, alignment_df, palette='jet', host=None, output_folde
     x = list(norm_alignment.keys())
     alignment_by_taxunit = _by_taxunit(alignment_df)
     bars = []
+    host = '_'.join(host.split(sep=' '))
     colors_spaces, colors_lines = color_generator(len(alignment_by_taxunit), palette)
     for taxunit, color_space, color_line in zip(alignment_by_taxunit.keys(), colors_spaces, colors_lines):
         if taxunit == host:
