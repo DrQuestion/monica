@@ -141,11 +141,11 @@ def fetcher(table, oldies_path=OLDIES_PATH):
                 current_genomes_length[new_header_components[1]] = genome_length
                 # genomes_length[new_header_components[1]] = genome_length
         pickle.dump(current_genomes_length, open(os.path.join(GENOMES_PATH, 'current_genomes_length.pkl'), 'wb'))
+        oldies_cleaner(new_genomes, old, oldies_path)
 
     print(f'Finished genomes retrieval')
     print(f'Total time for genome rewriting took {total_time} seconds')
     os.chdir(CWD)
-    oldies_cleaner(new_genomes, old, oldies_path)
     return oldies
 
 
