@@ -47,11 +47,13 @@ def plotter(norm_alignment, alignment_df, palette='jet', host=None, output_folde
     colors_spaces, colors_lines = color_generator(len(alignment_by_taxunit), palette)
     for taxunit, color_space, color_line in zip(alignment_by_taxunit.keys(), colors_spaces, colors_lines):
         if taxunit == host:
-            taxunit += '_(host)'
+            name = taxunit + '_(host)'
+        else:
+            name = taxunit
         bars.append(go.Bar(
             x=x,
             y=list(alignment_by_taxunit[taxunit]),
-            name=taxunit,
+            name=name,
             marker=dict(
                 color=color_space,
                 line=dict(
