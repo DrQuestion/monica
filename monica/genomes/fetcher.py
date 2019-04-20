@@ -102,7 +102,6 @@ def fetcher(table, oldies_path=OLDIES_PATH, format_genomes=None):
     total_time=0
 
     if not old and not format_genomes:
-        print('no old no form')
         current_genomes_length = dict()
         for row in table.iterrows():
             ftp=row[1]['ftp_path']
@@ -118,7 +117,6 @@ def fetcher(table, oldies_path=OLDIES_PATH, format_genomes=None):
         pickle.dump(current_genomes_length, open(os.path.join(GENOMES_PATH, 'current_genomes_length.pkl'), 'wb'))
 
     elif not old and format_genomes:
-        print('no old form')
         current_genomes_length = dict()
         genomes_to_format = [file for file in os.listdir(format_genomes) if file.endswith('fna.gz')]
         for row in table.iterrows():
@@ -143,7 +141,6 @@ def fetcher(table, oldies_path=OLDIES_PATH, format_genomes=None):
         pickle.dump(current_genomes_length, open(os.path.join(GENOMES_PATH, 'current_genomes_length.pkl'), 'wb'))
 
     elif old and not format_genomes:
-        print('old no form')
         genomes_length = pickle.load(open(os.path.join(oldies_path, 'genomes_length.pkl'), 'rb'))
         current_genomes_length = dict()
         for row in table.iterrows():
@@ -170,11 +167,9 @@ def fetcher(table, oldies_path=OLDIES_PATH, format_genomes=None):
         oldies_cleaner(new_genomes, old, oldies_path)
 
     else:
-        print('else')
         genomes_length = pickle.load(open(os.path.join(oldies_path, 'genomes_length.pkl'), 'rb'))
         current_genomes_length = dict()
         genomes_to_format = [file for file in os.listdir(format_genomes) if file.endswith('fna.gz')]
-        print(genomes_to_format)
         for row in table.iterrows():
             ftp = row[1]['ftp_path']
             filename = ftp.split(sep='/')[-1]
