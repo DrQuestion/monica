@@ -45,6 +45,6 @@ def builder(oldies, database_name=DATABASE_NAME, keep_genomes=None, oldies_path=
         # delete genomes without storing them
         for file in os.listdir(GENOMES_PATH):
             if file.endswith('.fna.gz'):
-                os.remove(file)
+                os.remove(os.path.join(GENOMES_PATH, file))
 
     return database

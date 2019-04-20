@@ -87,7 +87,7 @@ def ftp_selector(mode=None, species=[]):
     return merged_table
 
 
-def fetcher(table, oldies_path=OLDIES_PATH):
+def fetcher(table, oldies_path=OLDIES_PATH, format_genomes=None):
     oldies = []
     new_genomes = []
 
@@ -101,7 +101,8 @@ def fetcher(table, oldies_path=OLDIES_PATH):
 
     total_time=0
 
-    if not old:
+    if not old and not format_genomes:
+        print('no old no form')
         current_genomes_length = dict()
         for row in table.iterrows():
             ftp=row[1]['ftp_path']
@@ -116,7 +117,33 @@ def fetcher(table, oldies_path=OLDIES_PATH):
             current_genomes_length[new_header_components[1]] = genome_length
         pickle.dump(current_genomes_length, open(os.path.join(GENOMES_PATH, 'current_genomes_length.pkl'), 'wb'))
 
-    else:
+    elif not old and format_genomes:
+        print('no old form')
+        current_genomes_length = dict()
+        genomes_to_format = [file for file in os.listdir(format_genomes) if file.endswith('fna.gz')]
+        for row in table.iterrows():
+            ftp = row[1]['ftp_path']
+            filename = ftp.split(sep='/')[-1]
+            new_header_components = [row[1][-1], row[1]['# assembly_accession'].split(sep='_')[-1]]
+            new_filename = '_'.join(new_header_components) + '.fna.gz'
+            new_header = ':'.join(new_header_components)
+
+            if filename in genomes_to_format:
+                print(f'Formatting {filename} found in {format_genomes}')
+                filename = os.path.join(format_genomes, filename)
+                genome_length, t1 = header_modifier(filename, new_filename, new_header, format=True)
+
+            else:
+                print(f'Started {filename} download')
+                wget.download(ftp)
+                genome_length, t1 = header_modifier(filename, new_filename, new_header)
+
+            total_time += t1
+            current_genomes_length[new_header_components[1]] = genome_length
+        pickle.dump(current_genomes_length, open(os.path.join(GENOMES_PATH, 'current_genomes_length.pkl'), 'wb'))
+
+    elif old and not format_genomes:
+        print('old no form')
         genomes_length = pickle.load(open(os.path.join(oldies_path, 'genomes_length.pkl'), 'rb'))
         current_genomes_length = dict()
         for row in table.iterrows():
@@ -139,7 +166,42 @@ def fetcher(table, oldies_path=OLDIES_PATH):
                 total_time+=t1
                 new_genomes.append(new_filename.split(sep='.')[0])
                 current_genomes_length[new_header_components[1]] = genome_length
-                # genomes_length[new_header_components[1]] = genome_length
+        pickle.dump(current_genomes_length, open(os.path.join(GENOMES_PATH, 'current_genomes_length.pkl'), 'wb'))
+        oldies_cleaner(new_genomes, old, oldies_path)
+
+    else:
+        print('else')
+        genomes_length = pickle.load(open(os.path.join(oldies_path, 'genomes_length.pkl'), 'rb'))
+        current_genomes_length = dict()
+        genomes_to_format = [file for file in os.listdir(format_genomes) if file.endswith('fna.gz')]
+        print(genomes_to_format)
+        for row in table.iterrows():
+            ftp = row[1]['ftp_path']
+            filename = ftp.split(sep='/')[-1]
+            new_header_components = [row[1][-1], row[1]['# assembly_accession'].split(sep='_')[-1]]
+            new_filename = '_'.join(new_header_components) + '.fna.gz'
+
+            if new_filename in old:
+                oldies.append(new_filename)
+                old.remove(new_filename)
+                current_genomes_length[new_header_components[1]] = genomes_length[new_header_components[1]]
+                print(f'{filename} already present in oldies as {new_filename}')
+
+            else:
+                new_header = ':'.join(new_header_components)
+                if filename in genomes_to_format:
+                    print(f'Formatting {filename} found in {format_genomes}')
+                    filename = os.path.join(format_genomes, filename)
+                    genome_length, t1 = header_modifier(filename, new_filename, new_header, format=True)
+
+                else:
+                    print(f'Started {filename} download')
+                    wget.download(ftp)
+                    genome_length, t1 = header_modifier(filename, new_filename, new_header)
+
+                total_time += t1
+                new_genomes.append(new_filename.split(sep='.')[0])
+                current_genomes_length[new_header_components[1]] = genome_length
         pickle.dump(current_genomes_length, open(os.path.join(GENOMES_PATH, 'current_genomes_length.pkl'), 'wb'))
         oldies_cleaner(new_genomes, old, oldies_path)
 
@@ -149,15 +211,16 @@ def fetcher(table, oldies_path=OLDIES_PATH):
     return oldies
 
 
-def header_modifier(file, new_filename, new_header):
+def header_modifier(filename, new_filename, new_header, format=False):
     t0=time.time()
     genome_length=0
-    with gzip.open(file, 'rt') as old, gzip.open(new_filename, 'wt') as new:
+    with gzip.open(filename, 'rt') as old, gzip.open(new_filename, 'wt') as new:
         for seq_record in SeqIO.parse(old, 'fasta'):
             seq_record.id=new_header
             genome_length += len(seq_record)
             SeqIO.write(seq_record, new, 'fasta')
-    os.remove(file)
+    if not format:
+        os.remove(filename)
     t1=time.time()-t0
     return genome_length, t1
 

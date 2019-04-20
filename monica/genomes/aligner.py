@@ -87,9 +87,9 @@ def aligner(sample, sample_name, index, mode=None, overnight=False, mapped_folde
                             sample_alignment[tax_unit] = Counter({accession: hit.mlen})
 
             if any_hit:
-                SeqIO.write(seq_record, mapped, 'fasta')
+                SeqIO.write(seq_record, mapped, 'fastq')
             else:
-                SeqIO.write(seq_record, unmapped, 'fasta')
+                SeqIO.write(seq_record, unmapped, 'fastq')
 
     print(f'{sample} done')
     os.remove(sample)
@@ -136,5 +136,5 @@ def normalizer(alignment):
 
 def alignment_to_data_frame(alignment, output_folder=None, filename='monica.dataframe'):
     data_frame = pd.concat({k: pd.DataFrame(v).unstack() for k, v in alignment.items()}, axis=1).dropna(how='all')
-    pd.DataFrame.to_csv(data_frame, os.path.join(output_folder, filename), sep='\t')
+    pd.DataFrame.to_csv(data_frame, os.path.join(output_folder, filename))
     return data_frame

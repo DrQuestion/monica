@@ -32,6 +32,9 @@ def check_input():
                         help='The number of threads to be used')
     parser.add_argument('-m', '--mode', choices=['single', 'all', 'overnight'],
                         help="The mode of monica's execution: single, all or overnight")
+    parser.add_argument('--format_genomes',
+                        help='Folder, call it together with -m and -H/-G, when assembly-formatted genomes'
+                             'are present in it without being formatted for monica')
 
     args = parser.parse_args()
     return args
@@ -62,6 +65,7 @@ def main():
     oldies_path = args.genomes_folder
     n_threads = args.threads
     mode = args.mode
+    format_genomes=args.format_genomes
 
     # Genomes ftp selection and download
     ftp_table = gfetcher.ftp_selector(mode=mode, species=guests)
@@ -71,7 +75,7 @@ def main():
         host_ftp_table = gfetcher.ftp_selector(mode='single', species=[host])
         ftp_table = ftp_table.append(host_ftp_table, ignore_index=True)
 
-    oldies = gfetcher.fetcher(ftp_table, oldies_path=oldies_path)
+    oldies = gfetcher.fetcher(ftp_table, oldies_path=oldies_path, format_genomes=format_genomes)
 
     # Database building and indexing
     database = gdatabase.builder(oldies, keep_genomes=keep_genomes, oldies_path=oldies_path)
