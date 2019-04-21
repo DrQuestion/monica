@@ -128,16 +128,23 @@ def fetcher(table, oldies_path=OLDIES_PATH, format_genomes=None):
 
             if filename in genomes_to_format:
                 print(f'Formatting {filename} found in {format_genomes}')
-                filename = os.path.join(format_genomes, filename)
-                genome_length, t1 = header_modifier(filename, new_filename, new_header, format=True)
+                try:
+                    filename = os.path.join(format_genomes, filename)
+                    genome_length, t1 = header_modifier(filename, new_filename, new_header, format=True)
+                    total_time += t1
+                    current_genomes_length[new_header_components[1]] = genome_length
+                except:
+                    print(f'{filename} failed formatting')
+                    continue
 
             else:
                 print(f'Started {filename} download')
                 wget.download(ftp)
                 genome_length, t1 = header_modifier(filename, new_filename, new_header)
+                total_time += t1
+                current_genomes_length[new_header_components[1]] = genome_length
 
-            total_time += t1
-            current_genomes_length[new_header_components[1]] = genome_length
+
         pickle.dump(current_genomes_length, open(os.path.join(GENOMES_PATH, 'current_genomes_length.pkl'), 'wb'))
 
     elif old and not format_genomes:
@@ -187,16 +194,23 @@ def fetcher(table, oldies_path=OLDIES_PATH, format_genomes=None):
                 if filename in genomes_to_format:
                     print(f'Formatting {filename} found in {format_genomes}')
                     filename = os.path.join(format_genomes, filename)
-                    genome_length, t1 = header_modifier(filename, new_filename, new_header, format=True)
+                    try:
+                        genome_length, t1 = header_modifier(filename, new_filename, new_header, format=True)
+                        total_time += t1
+                        new_genomes.append(new_filename.split(sep='.')[0])
+                        current_genomes_length[new_header_components[1]] = genome_length
+                    except:
+                        print(f'{filename} failed formatting')
+                        continue
 
                 else:
                     print(f'Started {filename} download')
                     wget.download(ftp)
                     genome_length, t1 = header_modifier(filename, new_filename, new_header)
+                    total_time += t1
+                    new_genomes.append(new_filename.split(sep='.')[0])
+                    current_genomes_length[new_header_components[1]] = genome_length
 
-                total_time += t1
-                new_genomes.append(new_filename.split(sep='.')[0])
-                current_genomes_length[new_header_components[1]] = genome_length
         pickle.dump(current_genomes_length, open(os.path.join(GENOMES_PATH, 'current_genomes_length.pkl'), 'wb'))
         oldies_cleaner(new_genomes, old, oldies_path)
 
