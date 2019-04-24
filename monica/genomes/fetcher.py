@@ -99,9 +99,8 @@ def fetcher(table, oldies_path=OLDIES_PATH, format_genomes=None):
     os.chdir(GENOMES_PATH)
     old = os.listdir(oldies_path)
 
-    total_time=0
-
     if not old and not format_genomes:
+        print(f'No old genomes folder provided, downloading {table.shape[0]} genomes')
         current_genomes_length = dict()
         for row in table.iterrows():
             ftp=row[1]['ftp_path']
@@ -109,14 +108,14 @@ def fetcher(table, oldies_path=OLDIES_PATH, format_genomes=None):
             new_header_components=[row[1][-1], row[1]['# assembly_accession'].split(sep='_')[-1]]
             new_filename='_'.join(new_header_components)+'.fna.gz'
             new_header = ':'.join(new_header_components)
-            print(f'Started {filename} download')
+            # print(f'Started {filename} download')
             wget.download(ftp)
-            genome_length, t1 = header_modifier(filename, new_filename, new_header)
-            total_time+=t1
+            genome_length = header_modifier(filename, new_filename, new_header)
             current_genomes_length[new_header_components[1]] = genome_length
         pickle.dump(current_genomes_length, open(os.path.join(GENOMES_PATH, 'current_genomes_length.pkl'), 'wb'))
 
     elif not old and format_genomes:
+        print(f'No old genomes folder provided, formatting genomes in {format_genomes} and downloading new ones')
         current_genomes_length = dict()
         genomes_to_format = [file for file in os.listdir(format_genomes) if file.endswith('fna.gz')]
         for row in table.iterrows():
@@ -127,27 +126,25 @@ def fetcher(table, oldies_path=OLDIES_PATH, format_genomes=None):
             new_header = ':'.join(new_header_components)
 
             if filename in genomes_to_format:
-                print(f'Formatting {filename} found in {format_genomes}')
+                # print(f'Formatting {filename} found in {format_genomes}')
                 try:
                     filename = os.path.join(format_genomes, filename)
-                    genome_length, t1 = header_modifier(filename, new_filename, new_header, format=True)
-                    total_time += t1
+                    genome_length = header_modifier(filename, new_filename, new_header, format=True)
                     current_genomes_length[new_header_components[1]] = genome_length
                 except:
                     print(f'{filename} failed formatting')
                     continue
 
             else:
-                print(f'Started {filename} download')
+                # print(f'Started {filename} download')
                 wget.download(ftp)
-                genome_length, t1 = header_modifier(filename, new_filename, new_header)
-                total_time += t1
+                genome_length = header_modifier(filename, new_filename, new_header)
                 current_genomes_length[new_header_components[1]] = genome_length
-
 
         pickle.dump(current_genomes_length, open(os.path.join(GENOMES_PATH, 'current_genomes_length.pkl'), 'wb'))
 
     elif old and not format_genomes:
+        print(f'Provided an old genomes folder, downloading necessary genomes not there')
         genomes_length = pickle.load(open(os.path.join(oldies_path, 'genomes_length.pkl'), 'rb'))
         current_genomes_length = dict()
         for row in table.iterrows():
@@ -160,20 +157,20 @@ def fetcher(table, oldies_path=OLDIES_PATH, format_genomes=None):
                 oldies.append(new_filename)
                 old.remove(new_filename)
                 current_genomes_length[new_header_components[1]] = genomes_length[new_header_components[1]]
-                print(f'{filename} already present in oldies as {new_filename}')
+                # print(f'{filename} already present in oldies as {new_filename}')
 
             else:
                 new_header = ':'.join(new_header_components)
-                print(f'Started {filename} download')
+                # print(f'Started {filename} download')
                 wget.download(ftp)
-                genome_length, t1 = header_modifier(filename, new_filename, new_header)
-                total_time+=t1
+                genome_length = header_modifier(filename, new_filename, new_header)
                 new_genomes.append(new_filename.split(sep='.')[0])
                 current_genomes_length[new_header_components[1]] = genome_length
         pickle.dump(current_genomes_length, open(os.path.join(GENOMES_PATH, 'current_genomes_length.pkl'), 'wb'))
         oldies_cleaner(new_genomes, old, oldies_path)
 
     else:
+        print(f'Provided an old genomes folder, if necessary formatting genomes in {format_genomes} or downloading them')
         genomes_length = pickle.load(open(os.path.join(oldies_path, 'genomes_length.pkl'), 'rb'))
         current_genomes_length = dict()
         genomes_to_format = [file for file in os.listdir(format_genomes) if file.endswith('fna.gz')]
@@ -187,16 +184,15 @@ def fetcher(table, oldies_path=OLDIES_PATH, format_genomes=None):
                 oldies.append(new_filename)
                 old.remove(new_filename)
                 current_genomes_length[new_header_components[1]] = genomes_length[new_header_components[1]]
-                print(f'{filename} already present in oldies as {new_filename}')
+                # print(f'{filename} already present in oldies as {new_filename}')
 
             else:
                 new_header = ':'.join(new_header_components)
                 if filename in genomes_to_format:
-                    print(f'Formatting {filename} found in {format_genomes}')
+                    # print(f'Formatting {filename} found in {format_genomes}')
                     filename = os.path.join(format_genomes, filename)
                     try:
-                        genome_length, t1 = header_modifier(filename, new_filename, new_header, format=True)
-                        total_time += t1
+                        genome_length= header_modifier(filename, new_filename, new_header, format=True)
                         new_genomes.append(new_filename.split(sep='.')[0])
                         current_genomes_length[new_header_components[1]] = genome_length
                     except:
@@ -204,10 +200,9 @@ def fetcher(table, oldies_path=OLDIES_PATH, format_genomes=None):
                         continue
 
                 else:
-                    print(f'Started {filename} download')
+                    # print(f'Started {filename} download')
                     wget.download(ftp)
-                    genome_length, t1 = header_modifier(filename, new_filename, new_header)
-                    total_time += t1
+                    genome_length = header_modifier(filename, new_filename, new_header)
                     new_genomes.append(new_filename.split(sep='.')[0])
                     current_genomes_length[new_header_components[1]] = genome_length
 
@@ -215,13 +210,11 @@ def fetcher(table, oldies_path=OLDIES_PATH, format_genomes=None):
         oldies_cleaner(new_genomes, old, oldies_path)
 
     print(f'Finished genomes retrieval')
-    print(f'Total time for genome rewriting took {total_time} seconds')
     os.chdir(CWD)
     return oldies
 
 
 def header_modifier(filename, new_filename, new_header, format=False):
-    t0=time.time()
     genome_length=0
     with gzip.open(filename, 'rt') as old, gzip.open(new_filename, 'wt') as new:
         for seq_record in SeqIO.parse(old, 'fasta'):
@@ -230,8 +223,7 @@ def header_modifier(filename, new_filename, new_header, format=False):
             SeqIO.write(seq_record, new, 'fasta')
     if not format:
         os.remove(filename)
-    t1=time.time()-t0
-    return genome_length, t1
+    return genome_length
 
 
 def ncbi_taxa_updated():
@@ -255,5 +247,6 @@ def oldies_cleaner(new_genomes, old, oldies_path):
         if genome_no_version in new_genomes:
             os.remove(os.path.join(oldies_path, genome))
             accession=genome[:-7].split(sep='_')[-1]
+            genomes_length.pop(accession)
             print(f'Removing {genome}, new version found')
     pickle.dump(genomes_length, open(os.path.join(oldies_path, 'genomes_length.pkl'), 'wb'))
