@@ -80,7 +80,13 @@ def main():
     # Database building and indexing
     database = gdatabase.builder(oldies, keep_genomes=keep_genomes, oldies_path=oldies_path)
 
+    with open(os.path.join(gfetcher.GENOMES_PATH, 'going_to_enter_indexing'), 'wb'):
+        pass
+
     idx = galigner.indexer(database, n_threads=n_threads)
+
+    with open(os.path.join(gfetcher.GENOMES_PATH, 'going_to_enter_alignment'), 'wb'):
+        pass
 
     # Alignment and normalization
     alignment = galigner.multi_threaded_aligner(input_folder, idx, mode='basic', n_threads=n_threads)

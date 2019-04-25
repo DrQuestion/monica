@@ -47,4 +47,6 @@ def builder(oldies, database_name=DATABASE_NAME, keep_genomes=None, oldies_path=
             if file.endswith('.fna.gz'):
                 os.remove(os.path.join(GENOMES_PATH, file))
 
+    with open(os.path.join(GENOMES_PATH, 'database_created'), 'wb'):
+        pass
     return database

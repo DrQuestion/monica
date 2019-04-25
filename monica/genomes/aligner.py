@@ -21,7 +21,11 @@ UNMAPPED_FILES_FOLDER = 'unmapped'
 
 
 def indexer(database, n_threads=None):
+    with open(os.path.join(GENOMES_PATH, 'entered_indexer'), 'wb'):
+        pass
     index = mappy.Aligner(fn_idx_in=database, preset='map-ont', best_n=BEST_N, n_threads=n_threads)
+    with open(os.path.join(GENOMES_PATH, 'finished_indexing'), 'wb'):
+        pass
     return index
 
 
