@@ -16,13 +16,13 @@ OPACITY = 0.75
 
 
 def _by_taxunit(dataframe):
-    by_taxunit=dict()
+    by_taxunit = dict()
     for index, series in dataframe.iterrows():
-        taxunit=index[0]
+        taxunit = index[0]
         if taxunit not in by_taxunit:
-            by_taxunit[taxunit]=series.fillna(value=0).values
+            by_taxunit[taxunit] = series.fillna(value=0).values
         else:
-            by_taxunit[taxunit]+=series.fillna(value=0).values
+            by_taxunit[taxunit] += series.fillna(value=0).values
     return by_taxunit
 
 
@@ -43,7 +43,8 @@ def plotter(norm_alignment, alignment_df, palette='jet', host=None, output_folde
     x = list(norm_alignment.keys())
     alignment_by_taxunit = _by_taxunit(alignment_df)
     bars = []
-    host = '_'.join(host.split(sep=' '))
+    if host:
+        host = '_'.join(host.split(sep=' '))
     colors_spaces, colors_lines = color_generator(len(alignment_by_taxunit), palette)
     for taxunit, color_space, color_line in zip(alignment_by_taxunit.keys(), colors_spaces, colors_lines):
         if taxunit == host:

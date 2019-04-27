@@ -9,9 +9,10 @@ import mappy
 from Bio import SeqIO
 
 from .fetcher import GENOMES_PATH
+from .database import DATABASE_PATH
 
 BEST_N = 1
-IDXFILE = os.path.join(os.path.dirname(__file__), 'index.mmi')
+INDEX_PICKLE = os.path.join(DATABASE_PATH, 'index.pkl')
 
 ALIGNMENT_PICKLE_FILENAME = 'alignment.pkl'
 ALIGNMENT_PICKLE = os.path.join(os.path.dirname(__file__), ALIGNMENT_PICKLE_FILENAME)
@@ -24,6 +25,7 @@ def indexer(database, n_threads=None):
     with open(os.path.join(GENOMES_PATH, 'entered_indexer'), 'wb'):
         pass
     index = mappy.Aligner(fn_idx_in=database, preset='map-ont', best_n=BEST_N, n_threads=n_threads)
+    # pickle.dump(index, open(INDEX_PICKLE, 'w'))
     with open(os.path.join(GENOMES_PATH, 'finished_indexing'), 'wb'):
         pass
     return index

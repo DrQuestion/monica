@@ -2,6 +2,7 @@
 
 import os
 import argparse
+import pickle
 
 import genomes.fetcher as gfetcher
 import genomes.database as gdatabase
@@ -9,7 +10,7 @@ import genomes.aligner as galigner
 import plots.barplot as barplot
 
 
-def check_input():
+def main():
     parser = argparse.ArgumentParser(prog='monica')
 
     input_folder = parser.add_mutually_exclusive_group(required=True)
@@ -19,31 +20,43 @@ def check_input():
                               help='The folder where input fast5 are stored (real-time use only)')
     parser.add_argument('-o', '--output_folder',
                         help='The folder where output files will be stored')
-    parser.add_argument('-H', '--host_specie',
-                        help='Host species where samples come from, underscore separated ("Genus_specie")')
-    parser.add_argument('-G', '--guest_species', nargs='*',
-                        help='Guest species hypothesized to be present in sample, underscore separated ("Genus_specie")')
-    parser.add_argument('-k', '--keep_genomes', choices=['yes', 'no'], required=True,
-                        help='Choose if genomes are to be kept in -g')
-    parser.add_argument('-g', '--genomes_folder', default=gfetcher.OLDIES_PATH,
-                        help='The folder where already stored genomes will be found '
-                             'and new genomes will be stored if --keep_genomes option is set to "yes"')
     parser.add_argument('-t', '--threads', type=int, default=3,
                         help='The number of threads to be used')
-    parser.add_argument('-m', '--mode', choices=['single', 'all', 'overnight'],
-                        help="The mode of monica's execution: single, all or overnight")
-    parser.add_argument('--format_genomes',
-                        help='Folder, call it together with -m and -H/-G, when assembly-formatted genomes'
+
+    subparsers = parser.add_subparsers()
+
+    from_scratch = subparsers.add_parser('from_scratch', help='To run monica from the beginning')
+    from_scratch.add_argument('-H', '--host_specie',
+                        help='Host species where samples come from, underscore separated ("Genus_specie")')
+    from_scratch.add_argument('-G', '--guest_species', nargs='*',
+                        help='Guest species hypothesized to be present in sample, underscore separated ("Genus_specie")')
+    from_scratch.add_argument('-k', '--keep_genomes', choices=['yes', 'no'], required=True,
+                        help='Choose if genomes are to be kept in -g')
+    from_scratch.add_argument('-g', '--genomes_folder', default=gfetcher.OLDIES_PATH,
+                        help='The folder where already stored genomes will be found '
+                             'and new genomes will be stored if --keep_genomes option is set to "yes"')
+    from_scratch.add_argument('--format_genomes',
+                        help='Folder, call it together with -m and -H/-G, when assembly-formatted genomes '
                              'are present in it without being formatted for monica')
+    from_scratch.add_argument('-m', '--mode', choices=['single', 'all', 'overnight'],
+                              help="The mode of monica's execution: single, all or overnight")
+    from_scratch.set_defaults(func=main_from_scratch)
+
+    from_alignment = subparsers.add_parser('from_alignment', help='To run monica given an already built index/database')
+    from_alignment.add_argument('-uoi', '--use_old_index', action='store_true',
+                        help='Use the index of the previous analysis, useful for frequent use of the same genomes')
+    # momentary option, active since -uoi will be stable:
+    from_alignment.add_argument('-uod', '--use_old_database', action='store_true')
+    from_alignment.set_defaults(func=main_from_alignment)
 
     args = parser.parse_args()
+    args.func(args)
     return args
 
 
-def main():
+def main_from_scratch(args):
 
     # Input handling
-    args = check_input()
     if args.query_folder:
         input_folder = args.query_folder
     else:
@@ -54,6 +67,9 @@ def main():
         output_folder = os.path.join(input_folder, 'monica_output')
     if not os.path.exists(output_folder):
         os.mkdir(output_folder)
+    n_threads = args.threads
+    mode = args.mode
+
     host = args.host_specie
     guests = args.guest_species
     if guests:
@@ -63,9 +79,7 @@ def main():
     else:
         keep_genomes = False
     oldies_path = args.genomes_folder
-    n_threads = args.threads
-    mode = args.mode
-    format_genomes=args.format_genomes
+    format_genomes = args.format_genomes
 
     # Genomes ftp selection and download
     ftp_table = gfetcher.ftp_selector(mode=mode, species=guests)
@@ -97,6 +111,49 @@ def main():
 
     # Plotting
     barplot.plotter(norm_alignment, alignment_df, host=host, output_folder=output_folder)
+
+
+def main_from_alignment(args):
+
+    # Input handling
+    if args.query_folder:
+        input_folder = args.query_folder
+    else:
+        input_folder = args.fast5_folder
+    if args.output_folder:
+        output_folder = args.output_folder
+    else:
+        output_folder = os.path.join(input_folder, 'monica_output')
+    if not os.path.exists(output_folder):
+        os.mkdir(output_folder)
+    n_threads = args.threads
+
+    use_old_index = args.use_old_index
+    use_old_database = args.use_old_database
+
+    if use_old_database:
+        database = os.path.join(gdatabase.DATABASE_PATH, gdatabase.DATABASE_NAME)
+
+        with open(os.path.join(gfetcher.GENOMES_PATH, 'going_to_enter_indexing'), 'wb'):
+            pass
+
+        idx = galigner.indexer(database, n_threads=n_threads)
+
+    elif use_old_index:
+        idx = pickle.load(open(galigner.INDEX_PICKLE, 'r'))
+
+    with open(os.path.join(gfetcher.GENOMES_PATH, 'going_to_enter_alignment'), 'wb'):
+        pass
+
+    # Alignment and normalization
+    alignment = galigner.multi_threaded_aligner(input_folder, idx, mode='basic', n_threads=n_threads)
+
+    norm_alignment = galigner.normalizer(alignment)
+
+    alignment_df = galigner.alignment_to_data_frame(norm_alignment, output_folder=output_folder)
+
+    # Plotting
+    barplot.plotter(norm_alignment, alignment_df, output_folder=output_folder)
 
 
 if __name__ == '__main__':
