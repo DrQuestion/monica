@@ -1,9 +1,9 @@
-import pickle
-from context import aligner
+import os
+from context import aligner, database
 
 
-def test_aligner_indexer(database, idx_file=False, n_threads=None):
-    idx = aligner.indexer(database, idx_file=idx_file, n_threads=n_threads)
+def test_aligner_indexer(database, n_threads=None):
+    idx = aligner.indexer(database, n_threads=n_threads)
     return idx
 
 
@@ -20,3 +20,9 @@ def test_aligner_normalizer(alignment):
 def test_aligner_alignment_to_data_frame(alignment):
     df = aligner.alignment_to_data_frame(alignment)
     return df
+
+
+if __name__ == '__main__':
+
+    db = os.path.join(aligner.DATABASE_PATH, database.DATABASE_NAME)
+    idx = test_aligner_indexer(db, n_threads=4)

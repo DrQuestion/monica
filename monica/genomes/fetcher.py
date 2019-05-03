@@ -1,6 +1,6 @@
 import os
 import gzip
-import time
+import shutil
 import pickle
 import datetime as dt
 
@@ -15,6 +15,7 @@ from . import tables
 PARENTS=['Fungi','Oomycota','Bacteria','Archaea','Viruses','Viroids','Nematodes','Rhizaria','Alveolata','Heterokonta']
 GENOMES_PATH=os.path.join(os.path.dirname(__file__), 'genomes')
 OLDIES_PATH=os.path.join(GENOMES_PATH, 'oldies')
+EXCEPTIONS_PATH=os.path.join(GENOMES_PATH, 'exeptions')
 CWD=os.getcwd()
 
 NCBI_TAXA_UPDATE_LOG='ncbi_taxa_update_log'
@@ -95,6 +96,8 @@ def fetcher(table, oldies_path=OLDIES_PATH, format_genomes=None):
         os.mkdir(GENOMES_PATH)
     if not os.path.exists(oldies_path):
         os.mkdir(oldies_path)
+    if not os.path.exists(EXCEPTIONS_PATH):
+        os.mkdir(EXCEPTIONS_PATH)
 
     os.chdir(GENOMES_PATH)
     old = os.listdir(oldies_path)
@@ -110,8 +113,13 @@ def fetcher(table, oldies_path=OLDIES_PATH, format_genomes=None):
             new_header = ':'.join(new_header_components)
             # print(f'Started {filename} download')
             wget.download(ftp)
-            genome_length = header_modifier(filename, new_filename, new_header)
-            current_genomes_length[new_header_components[1]] = genome_length
+            try:
+                genome_length = header_modifier(filename, new_filename, new_header)
+                current_genomes_length[new_header_components[1]] = genome_length
+            except:
+                print(f'{filename} (ftp:{ftp}) failed')
+                shutil.move(filename, EXCEPTIONS_PATH)
+
         pickle.dump(current_genomes_length, open(os.path.join(GENOMES_PATH, 'current_genomes_length.pkl'), 'wb'))
 
     elif not old and format_genomes:
@@ -138,8 +146,12 @@ def fetcher(table, oldies_path=OLDIES_PATH, format_genomes=None):
             else:
                 # print(f'Started {filename} download')
                 wget.download(ftp)
-                genome_length = header_modifier(filename, new_filename, new_header)
-                current_genomes_length[new_header_components[1]] = genome_length
+                try:
+                    genome_length = header_modifier(filename, new_filename, new_header)
+                    current_genomes_length[new_header_components[1]] = genome_length
+                except:
+                    print(f'{filename} (ftp:{ftp}) failed')
+                    shutil.move(filename, EXCEPTIONS_PATH)
 
         pickle.dump(current_genomes_length, open(os.path.join(GENOMES_PATH, 'current_genomes_length.pkl'), 'wb'))
 
@@ -163,9 +175,14 @@ def fetcher(table, oldies_path=OLDIES_PATH, format_genomes=None):
                 new_header = ':'.join(new_header_components)
                 # print(f'Started {filename} download')
                 wget.download(ftp)
-                genome_length = header_modifier(filename, new_filename, new_header)
-                new_genomes.append(new_filename.split(sep='.')[0])
-                current_genomes_length[new_header_components[1]] = genome_length
+                try:
+                    genome_length = header_modifier(filename, new_filename, new_header)
+                    new_genomes.append(new_filename.split(sep='.')[0])
+                    current_genomes_length[new_header_components[1]] = genome_length
+                except:
+                    print(f'{filename} (ftp:{ftp}) failed')
+                    shutil.move(filename, EXCEPTIONS_PATH)
+
         pickle.dump(current_genomes_length, open(os.path.join(GENOMES_PATH, 'current_genomes_length.pkl'), 'wb'))
         oldies_cleaner(new_genomes, old, oldies_path)
 
@@ -202,9 +219,13 @@ def fetcher(table, oldies_path=OLDIES_PATH, format_genomes=None):
                 else:
                     # print(f'Started {filename} download')
                     wget.download(ftp)
-                    genome_length = header_modifier(filename, new_filename, new_header)
-                    new_genomes.append(new_filename.split(sep='.')[0])
-                    current_genomes_length[new_header_components[1]] = genome_length
+                    try:
+                        genome_length = header_modifier(filename, new_filename, new_header)
+                        new_genomes.append(new_filename.split(sep='.')[0])
+                        current_genomes_length[new_header_components[1]] = genome_length
+                    except:
+                        print(f'{filename} (ftp:{ftp}) failed')
+                        shutil.move(filename, EXCEPTIONS_PATH)
 
         pickle.dump(current_genomes_length, open(os.path.join(GENOMES_PATH, 'current_genomes_length.pkl'), 'wb'))
         oldies_cleaner(new_genomes, old, oldies_path)
@@ -215,15 +236,15 @@ def fetcher(table, oldies_path=OLDIES_PATH, format_genomes=None):
 
 
 def header_modifier(filename, new_filename, new_header, format=False):
-    genome_length=0
-    with gzip.open(filename, 'rt') as old, gzip.open(new_filename, 'wt') as new:
-        for seq_record in SeqIO.parse(old, 'fasta'):
-            seq_record.id=new_header
-            genome_length += len(seq_record)
-            SeqIO.write(seq_record, new, 'fasta')
-    if not format:
-        os.remove(filename)
-    return genome_length
+        genome_length=0
+        with gzip.open(filename, 'rt') as old, gzip.open(new_filename, 'wt') as new:
+            for seq_record in SeqIO.parse(old, 'fasta'):
+                seq_record.id=new_header
+                genome_length += len(seq_record)
+                SeqIO.write(seq_record, new, 'fasta')
+        if not format:
+            os.remove(filename)
+        return genome_length
 
 
 def ncbi_taxa_updated():
