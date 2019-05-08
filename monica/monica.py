@@ -4,10 +4,13 @@ import os
 import argparse
 import pickle
 
+import psutil
+
 import genomes.fetcher as gfetcher
 import genomes.database as gdatabase
 import genomes.aligner as galigner
 import plots.barplot as barplot
+import helpers.helpers as helpers
 
 
 def main():
@@ -29,7 +32,9 @@ def main():
     from_scratch.add_argument('-H', '--host_specie',
                         help='Host species where samples come from, underscore separated ("Genus_specie")')
     from_scratch.add_argument('-G', '--guest_species', nargs='*',
-                        help='Guest species hypothesized to be present in sample, underscore separated ("Genus_specie")')
+                        help='Guest species hypothesized to be present in the sample, '
+                             'underscore separated ("Genus_specie"), but also higher levels of the tree of life, '
+                             'like order or genus only')
     from_scratch.add_argument('-k', '--keep_genomes', choices=['yes', 'no'], required=True,
                         help='Choose if genomes are to be kept in -g')
     from_scratch.add_argument('-g', '--genomes_folder', default=gfetcher.OLDIES_PATH,
@@ -38,6 +43,10 @@ def main():
     from_scratch.add_argument('--format_genomes',
                         help='Folder, call it together with -m and -H/-G, when assembly-formatted genomes '
                              'are present in it without being formatted for monica')
+    from_scratch.add_argument('-im', '--indexing_memory', type=helpers.human_readable,
+                        help='The maximum memory the user wishes to be used during indexing. '
+                             'Must end with a unit of measure among B|K|M|G|T.'
+                             'Default is half of total memory')
     from_scratch.add_argument('-m', '--mode', choices=['single', 'all', 'overnight'],
                               help="The mode of monica's execution: single, all or overnight")
     from_scratch.set_defaults(func=main_from_scratch)
@@ -67,13 +76,17 @@ def main_from_scratch(args):
         output_folder = os.path.join(input_folder, 'monica_output')
     if not os.path.exists(output_folder):
         os.mkdir(output_folder)
+    if args.indexing_memory:
+        indexing_memory = args.indexing_memory
+    else:
+        indexing_memory = psutil.virtual_memory().total/2
     n_threads = args.threads
-    mode = args.mode
 
+    mode = args.mode
     host = args.host_specie
     guests = args.guest_species
     if guests:
-        guests=map(lambda guest: ' '.join(guest.split(sep='_')), guests)
+        guests = map(lambda guest: ' '.join(guest.split(sep='_')), guests)
     if args.keep_genomes == 'yes':
         keep_genomes = True
     else:
@@ -159,4 +172,5 @@ def main_from_alignment(args):
 if __name__ == '__main__':
 
     main()
+
 

@@ -24,7 +24,7 @@ UNMAPPED_FILES_FOLDER = 'unmapped'
 def indexer(database, n_threads=None, index_file=INDEX_FILE):
     with open(os.path.join(GENOMES_PATH, 'entered_indexer'), 'wb'):
         pass
-    index = mappy.Aligner(fn_idx_in=database, preset='map-ont', best_n=BEST_N, n_threads=n_threads, batch_size='250M', fn_idx_out=bytes(index_file, encoding='utf-8'))
+    index = mappy.Aligner(fn_idx_in=database, preset='map-ont', best_n=BEST_N, n_threads=n_threads, fn_idx_out=bytes(index_file, encoding='utf-8'))
     # pickle.dump(index, open(INDEX_PICKLE, 'w'))
     with open(os.path.join(GENOMES_PATH, 'finished_indexing'), 'wb'):
         pass
