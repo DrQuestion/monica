@@ -92,7 +92,7 @@ def ftp_selector(mode=None, species=[]):
 
 def fetcher(table, oldies_path=OLDIES_PATH, keep_genomes=None, format_genomes=None):
     # oldies = []
-    t0=time.time()
+    t0 = time.time()
 
     new_genomes = []
     genomes = []
@@ -265,18 +265,6 @@ def fetcher(table, oldies_path=OLDIES_PATH, keep_genomes=None, format_genomes=No
     return genomes
 
 
-def header_modifier(filename, new_filename, new_header, format=False):
-        genome_length=0
-        with gzip.open(filename, 'rt') as old, gzip.open(new_filename, 'wt') as new:
-            for seq_record in SeqIO.parse(old, 'fasta'):
-                seq_record.id=new_header
-                genome_length += len(seq_record)
-                SeqIO.write(seq_record, new, 'fasta')
-        if not format:
-            os.remove(filename)
-        return genome_length
-
-
 def ncbi_taxa_updated():
     if not NCBI_TAXA_UPDATE_LOG in os.listdir(os.path.dirname(__file__)):
         return 0
@@ -292,12 +280,8 @@ def ncbi_taxa_updated():
 def oldies_cleaner(new_genomes, old, oldies_path):
     # When a genome with same accession prefix but different version is downloaded, the old version is deleted
     # from the current database
-    old_no_version=list(map(lambda genome: genome.split(sep='.')[0], old))
-    genomes_length=pickle.load(open(os.path.join(oldies_path, 'genomes_length.pkl'), 'rb'))
+    old_no_version = list(map(lambda genome: genome.split(sep='.')[0], old))
     for genome, genome_no_version in zip(old, old_no_version):
         if genome_no_version in new_genomes:
             os.remove(os.path.join(oldies_path, genome))
-            accession = genome[:-7].split(sep='_')[-1]
-            genomes_length.pop(accession)
             print(f'Removing {genome}, new version found')
-    pickle.dump(genomes_length, open(os.path.join(oldies_path, 'genomes_length.pkl'), 'wb'))

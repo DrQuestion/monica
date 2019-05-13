@@ -15,16 +15,16 @@ if __name__ == '__main__':
 
     query_folder='/home/drq/Desktop/temp/query'
 
-    time0=time.time()
-    t=test_fetcher.test_ftp_selector(mode='all', species=['Verticillium dahliae'])
+    time0 = time.time()
+    t = test_fetcher.test_ftp_selector(mode='single', species=['Xanthomonadaceae'])
     print(f'Table processing and ftp selection took {time.time()-time0} seconds')
 
-    time0=time.time()
-    oldies=test_fetcher.test_fetcher(t)
+    time0 = time.time()
+    genomes = test_fetcher.test_fetcher(table=t, keep_genomes=True)
     print(f'Genomes download took {time.time()-time0} seconds')
 
     time0=time.time()
-    db=test_database.test_database_builder(oldies, keep_genomes=True, oldies_path='/home/drq/PycharmProjects/tesi/monica/monica/genomes/genomes/oldies')
+    db, lengths = test_database.test_database_multi_threaded_builder(genomes=genomes, keep_genomes=True, oldies_path='/home/drq/PycharmProjects/tesi/monica/monica/genomes/genomes/oldies')
     print(f'Database formation took {time.time()-time0} seconds')
 
     # shutil.rmtree(os.path.join(query_folder, 'mapped'))
