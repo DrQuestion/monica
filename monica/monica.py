@@ -2,7 +2,6 @@
 
 import os
 import argparse
-import pickle
 
 import psutil
 
@@ -25,6 +24,10 @@ def main():
                         help='The folder where output files will be stored')
     parser.add_argument('-t', '--threads', type=int, default=3,
                         help='The number of threads to be used')
+    parser.add_argument('--not_auto_open_plot', action='store_true',
+                        help='If wishing NOT to plot the results at the and of the analysis')
+    parser.add_argument('--not_show_legend', action='store_true',
+                        help='If wishing NOT to show legend')
 
     subparsers = parser.add_subparsers()
 
@@ -76,6 +79,9 @@ def main_from_scratch(args):
         output_folder = os.path.join(input_folder, 'monica_output')
     if not os.path.exists(output_folder):
         os.mkdir(output_folder)
+    auto_open_plot = not args.not_auto_open_plot
+    show_legend = not args.not_show_legend
+
     if args.indexing_memory:
         indexing_memory = args.indexing_memory
     else:
@@ -105,10 +111,12 @@ def main_from_scratch(args):
         host_ftp_table = gfetcher.ftp_selector(mode='single', species=[host])
         ftp_table = ftp_table.append(host_ftp_table, ignore_index=True)
 
-    genomes = gfetcher.fetcher(ftp_table, oldies_path=oldies_path, keep_genomes=keep_genomes, format_genomes=format_genomes)
+    genomes = gfetcher.fetcher(ftp_table, oldies_path=oldies_path, keep_genomes=keep_genomes,
+                               format_genomes=format_genomes)
 
     # Database building and indexing
-    databases, genomes_length = gdatabase.multi_threaded_builder(genomes=genomes, max_chunk_size=max_chunk_size, keep_genomes=keep_genomes, n_threads=n_threads)
+    databases, genomes_length = gdatabase.multi_threaded_builder(genomes=genomes, max_chunk_size=max_chunk_size,
+                                                                 keep_genomes=keep_genomes, n_threads=n_threads)
 
     with open(os.path.join(gfetcher.GENOMES_PATH, 'going_to_enter_indexing'), 'wb'):
         pass
@@ -126,7 +134,8 @@ def main_from_scratch(args):
     alignment_df = galigner.alignment_to_data_frame(norm_alignment, output_folder=output_folder)
 
     # Plotting
-    barplot.plotter(norm_alignment, alignment_df, host=host, output_folder=output_folder)
+    barplot.plotter(norm_alignment, alignment_df, output_folder=output_folder, palette='jet',
+                    host=host, guests=guests, mode=mode, show_legend=show_legend, auto_open=auto_open_plot)
 
 
 def main_from_alignment(args):
@@ -143,6 +152,8 @@ def main_from_alignment(args):
     if not os.path.exists(output_folder):
         os.mkdir(output_folder)
     n_threads = args.threads
+    auto_open_plot = not args.not_auto_open_plot
+    show_legend = not args.not_show_legend
 
     use_old_indexes = args.use_old_indexes
     use_old_databases = args.use_old_databases
@@ -169,7 +180,8 @@ def main_from_alignment(args):
     alignment_df = galigner.alignment_to_data_frame(norm_alignment, output_folder=output_folder)
 
     # Plotting
-    barplot.plotter(norm_alignment, alignment_df, output_folder=output_folder)
+    barplot.plotter(norm_alignment, alignment_df, output_folder=output_folder, palette='jet',
+                    show_legend=show_legend, auto_open=auto_open_plot)
 
 
 if __name__ == '__main__':

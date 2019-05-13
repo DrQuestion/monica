@@ -28,7 +28,7 @@ def indexer(databases, indexes_path=INDEXES_PATH):
         os.mkdir(indexes_path)
     else:
         for index in os.listdir(indexes_path):
-            os.remove(index)
+            os.remove(os.path.join(indexes_path, index))
     indexes = []
 
     with open(os.path.join(GENOMES_PATH, 'entered_indexer'), 'wb'):
@@ -58,7 +58,8 @@ def indexes_opener(indexes_path=INDEXES_PATH):
 
 
 def multi_threaded_aligner(query_folder, indexes, mode=None, overnight=False, n_threads=None,
-                           mapped_files_folder=MAPPED_FILES_FOLDER, unmapped_files_folder=UNMAPPED_FILES_FOLDER, ambiguous_files_folder=AMBIGUOUS_FILES_FOLDER):
+                           mapped_files_folder=MAPPED_FILES_FOLDER, unmapped_files_folder=UNMAPPED_FILES_FOLDER,
+                           ambiguous_files_folder=AMBIGUOUS_FILES_FOLDER):
     os.chdir(query_folder)
 
     samples = [file for file in os.listdir('.') if file.endswith('fastq')]

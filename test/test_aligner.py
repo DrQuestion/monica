@@ -45,4 +45,5 @@ if __name__ == '__main__':
 
     al_df = test_aligner_alignment_to_data_frame(alignment, output=output)
 
-    barplot.plotter(alignment, al_df, output_folder=output)
+    barplot.plotter(alignment, al_df, output_folder=output, mode='single', palette='jet',
+                    guests='Xanthomonadaceae', show_legend=False)

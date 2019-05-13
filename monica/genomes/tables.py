@@ -48,7 +48,7 @@ def updated():
     date = dt.datetime.strptime(date, '%Y-%m-%d')
     delta = dt.datetime.now() - date
     if delta.days > 2:
-        os.remove(REFSEQ_SUMMARY_FTP.split(sep='/')[-1])
-        os.remove(GENBANK_SUMMARY_FTP.split(sep='/')[-1])
+        os.remove(os.path.join(TABLES_PATH, REFSEQ_SUMMARY_FTP.split(sep='/')[-1]))
+        os.remove(os.path.join(TABLES_PATH, GENBANK_SUMMARY_FTP.split(sep='/')[-1]))
         return 0
     return 1
