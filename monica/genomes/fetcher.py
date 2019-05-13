@@ -1,24 +1,19 @@
 import os
-import gzip
-# import shutil
-import pickle
 import time
 import datetime as dt
 
 import wget
 import pandas as pd
 from ete3 import NCBITaxa
-from Bio import SeqIO
 
 from . import tables
 
 
 PARENTS = ['Fungi', 'Oomycota', 'Bacteria', 'Archaea', 'Viruses', 'Viroids',
            'Nematodes', 'Rhizaria', 'Alveolata', 'Heterokonta']
+
 GENOMES_PATH = os.path.join(os.path.dirname(__file__), 'genomes')
 OLDIES_PATH = os.path.join(GENOMES_PATH, 'oldies')
-# EXCEPTIONS_PATH=os.path.join(GENOMES_PATH, 'exeptions')
-# CWD=os.getcwd()
 
 NCBI_TAXA_UPDATE_LOG = 'ncbi_taxa_update_log'
 NCBI_TAXA_DAYS_THRESHOLD = 14

@@ -1,5 +1,4 @@
 import os
-# import shutil
 import pickle
 import gzip
 from itertools import count, repeat
@@ -40,29 +39,6 @@ def multi_threaded_builder(genomes=None, max_chunk_size=None, database_name=DATA
 
     pickle.dump(current_genomes_length, os.path.join(GENOMES_PATH, 'current_genomes_length.pkl'), 'wb')
 
-    # if keep_genomes:
-    #
-    #     # update genomes_length / create ex-novo
-    #     current_genomes_length = pickle.load(open(os.path.join(GENOMES_PATH, 'current_genomes_length.pkl'), 'rb'))
-    #     if 'genomes_length.pkl' in os.listdir(oldies_path):
-    #         genomes_length = pickle.load(open(os.path.join(oldies_path, 'genomes_length.pkl'), 'rb'))
-    #         genomes_length.update(current_genomes_length)
-    #     else:
-    #         genomes_length = current_genomes_length
-    #     pickle.dump(genomes_length, open(os.path.join(oldies_path, 'genomes_length.pkl'), 'wb'))
-    #
-    #     # move genomes in oldies_path
-    #     for database in os.listdir(GENOMES_PATH):
-    #         if database.endswith('.fna.gz'):
-    #             shutil.move(os.path.join(GENOMES_PATH, database), oldies_path)
-    #             # would raise errors if same genome downloaded twice, but it should not happen for monica's structure
-    #             # looks for an old genome before downloading it
-    # else:
-    #     # delete genomes without storing them
-    #     for database in os.listdir(GENOMES_PATH):
-    #         if database.endswith('.fna.gz'):
-    #             os.remove(os.path.join(GENOMES_PATH, database))
-
     with open(os.path.join(GENOMES_PATH, 'database_created'), 'wb'):
         pass
     return DATABASES_PATH, current_genomes_length
@@ -76,12 +52,15 @@ def builder(genomes_chunk, database_name, database_number):
         for genome in genomes_chunk:
             genome_length = 0
             new_header = ':'.join(genome[1])
-            with gzip.open(genome[0], 'rt') as g:
-                for seq_record in SeqIO.parse(g, 'fasta'):
-                    seq_record.id = new_header
-                    genome_length += len(seq_record)
-                    SeqIO.write(seq_record, database, 'fasta')
-            this_database_genomes_length[new_header] = genome_length
+            try:
+                with gzip.open(genome[0], 'rt') as g:
+                    for seq_record in SeqIO.parse(g, 'fasta'):
+                        seq_record.id = new_header
+                        genome_length += len(seq_record)
+                        SeqIO.write(seq_record, database, 'fasta')
+                this_database_genomes_length[new_header] = genome_length
+            except:
+                print('{} failed database insertion'.format(genome))
     return this_database_genomes_length
 
 
