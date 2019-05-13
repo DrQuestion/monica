@@ -57,7 +57,7 @@ def main():
     from_alignment = subparsers.add_parser('from_alignment', help='To run monica given an already built index/database')
     from_alignment.add_argument('-upi', '--use_prebuilt_indexes', action='store_true',
                         help='Use the index of the previous analysis, useful for frequent use of the same genomes')
-    # momentary option, active since -uoi will be stable:
+    # momentary option, active since -upi will be stable:
     from_alignment.add_argument('-upd', '--use_prebuilt_databases', action='store_true')
     from_alignment.set_defaults(func=main_from_alignment)
 
@@ -79,6 +79,8 @@ def main_from_scratch(args):
         output_folder = os.path.join(input_folder, 'monica_output')
     if not os.path.exists(output_folder):
         os.mkdir(output_folder)
+    n_threads = args.threads
+
     auto_open_plot = not args.not_auto_open_plot
     show_legend = not args.not_show_legend
 
@@ -88,8 +90,6 @@ def main_from_scratch(args):
         indexing_memory = psutil.virtual_memory().total/2
 
     max_chunk_size = indexing_memory/16
-
-    n_threads = args.threads
 
     mode = args.mode
     host = args.host_specie

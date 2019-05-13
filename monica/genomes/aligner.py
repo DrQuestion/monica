@@ -98,7 +98,7 @@ def aligner(sample, sample_name, indexes, mode=None, overnight=False, mapped_fol
                     if hit.is_primary:
                         hits.append(hit)
             if hits:
-                print(sorted([(hit.ctg.split(sep=':')[0], hit.mlen, hit.ctg_len, len(seq_record)) for hit in hits], reverse=True, key=lambda x: x[1]))
+                # print(sorted([(hit.ctg.split(sep=':')[0], hit.mlen, hit.ctg_len, len(seq_record)) for hit in hits], reverse=True, key=lambda x: x[1]))
                 if len(hits) == 1:
                     best = hits[0]
                 else:
