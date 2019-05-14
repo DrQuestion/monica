@@ -39,12 +39,24 @@ def color_generator(n_elements, palette):
     return spaces, lines
 
 
-def plotter(norm_alignment, alignment_df, palette='jet', host=None, output_folder=None):
+def plotter(norm_alignment, alignment_df, output_folder=None, palette='jet',
+            host=None, guests=None, mode=None, show_legend=True, auto_open=True):
     x = list(norm_alignment.keys())
     alignment_by_taxunit = _by_taxunit(alignment_df)
     bars = []
     if host:
         host = '_'.join(host.split(sep=' '))
+        if guests:
+            guests = map(lambda guest: '_'.join(guest.split(sep=' ')), guests)
+            title_text = 'Guests: {}; host: {}; analysis mode: {}'.format(guests, host, mode)
+        else:
+            # Unlikely? Overnight with host given?
+            title_text = 'Host: {}; analysis mode: {}'.format(host, mode)
+    elif guests:
+        title_text = 'Guests: {}; analysis mode: {}'.format(guests, mode)
+    else:
+        # Overnight no host given?
+        title_text = 'Analysis mode: {}'.format(mode)
     colors_spaces, colors_lines = color_generator(len(alignment_by_taxunit), palette)
     for taxunit, color_space, color_line in zip(alignment_by_taxunit.keys(), colors_spaces, colors_lines):
         if taxunit == host:
@@ -68,12 +80,23 @@ def plotter(norm_alignment, alignment_df, palette='jet', host=None, output_folde
         ))
 
     layout = go.Layout(
+        title=go.layout.Title(
+            font=dict(
+                size=24,
+                color='#436eee',
+                family='droid serif, bold'
+            ),
+            text=title_text,
+            xref='paper',
+            x=0
+        ),
         barmode='stack',
         hovermode='closest',
+        showlegend=show_legend,
         legend=dict(
             orientation='h'
         )
     )
 
     fig = go.Figure(data=bars, layout=layout)
-    py.plot(fig, filename=os.path.join(output_folder, 'monica.barplot.html'))
+    py.plot(fig, filename=os.path.join(output_folder, 'monica.barplot.html'), auto_open=auto_open)
