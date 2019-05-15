@@ -1,7 +1,11 @@
 FROM ubuntu:xenial
 
 RUN apt-get clean all && apt-get update && apt-get install -y -q git wget perl \
-    python3.7 software-properties-common python3-pip zlibc zlib1g-dev
+    software-properties-common zlibc zlib1g-dev
+
+RUN add-apt-repository -y ppa:deadsnakes/ppa
+
+RUN apt-get update && apt install python3.7 python3-pip
 
 WORKDIR /opt/
 
