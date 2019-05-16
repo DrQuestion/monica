@@ -1,5 +1,8 @@
-from re import search, split
+import os
+from re import search
 from argparse import ArgumentTypeError
+
+from genomes.aligner import ALIGNMENT_PICKLE
 
 
 def human_readable(indexing_memory):
@@ -17,11 +20,16 @@ def human_readable(indexing_memory):
 
 def human_readable_to_byte(indexing_memory):
     power = 2**10
-    units = {'B': 1, 'K': power**2, 'M': power**3, 'G': power**4, 'T': power**5}
+    units = {'B': 1, 'K': power**1, 'M': power**2, 'G': power**3, 'T': power**4}
     unit = indexing_memory[-1]
     quantity = float(indexing_memory[:-1])
     to_byte = quantity*units[unit]
     return to_byte
+
+
+def initializer():
+    if os.path.exists(ALIGNMENT_PICKLE):
+        os.remove(ALIGNMENT_PICKLE)
 
 
 if __name__ == '__main__':

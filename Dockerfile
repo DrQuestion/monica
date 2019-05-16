@@ -9,6 +9,8 @@ RUN apt-get clean all && apt-get update && apt-get install -y -q git wget perl \
 
 WORKDIR /opt/
 
+
+
 RUN git clone  https://github.com/DrQuestion/monica.git
 
 RUN pip3 install -r ./monica/requirements.txt

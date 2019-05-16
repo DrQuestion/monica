@@ -47,7 +47,8 @@ def plotter(norm_alignment, alignment_df, output_folder=None, palette='jet',
     if host:
         host = '_'.join(host.split(sep=' '))
         if guests:
-            guests = map(lambda guest: '_'.join(guest.split(sep=' ')), guests)
+            print(guests)
+            guests = [g for g in map(lambda guest: '_'.join(guest.split(sep=' ')), guests)]
             title_text = 'Guests: {}; host: {}; analysis mode: {}'.format(guests, host, mode)
         else:
             # Unlikely? Overnight with host given?

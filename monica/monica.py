@@ -38,8 +38,8 @@ def main():
                         help='Guest species hypothesized to be present in the sample, '
                              'underscore separated ("Genus_specie"), but also higher levels of the tree of life, '
                              'like order or genus only')
-    from_scratch.add_argument('-k', '--keep_genomes', choices=['yes', 'no'], required=True,
-                        help='Choose if genomes are to be kept in -g')
+    from_scratch.add_argument('-k', '--keep_genomes', choices=['yes', 'no'], default='yes',
+                        help='Choose if genomes are to be kept in -g, default "yes"')
     from_scratch.add_argument('-g', '--genomes_folder', default=gfetcher.OLDIES_PATH,
                         help='The folder where already stored genomes will be found '
                              'and new genomes will be stored if --keep_genomes option is set to "yes"')
@@ -94,6 +94,9 @@ def main_from_scratch(args):
     mode = args.mode
     host = args.host_specie
     guests = args.guest_species
+
+    helpers.initializer()
+
     if guests:
         guests = map(lambda guest: ' '.join(guest.split(sep='_')), guests)
     if args.keep_genomes == 'yes':
@@ -132,6 +135,8 @@ def main_from_scratch(args):
     norm_alignment = galigner.normalizer(alignment, genomes_length)
 
     alignment_df = galigner.alignment_to_data_frame(norm_alignment, output_folder=output_folder)
+
+    galigner.alignment_to_data_frame(alignment, output_folder=output_folder, filename='raw_monica.dataframe')
 
     # Plotting
     barplot.plotter(norm_alignment, alignment_df, output_folder=output_folder, palette='jet',
