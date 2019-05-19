@@ -39,21 +39,27 @@ def color_generator(n_elements, palette):
     return spaces, lines
 
 
-def plotter(norm_alignment, alignment_df, output_folder=None, palette='jet',
+def plotter(alignment_df, output_folder=None, palette='jet',
             host=None, guests=None, mode=None, show_legend=True, auto_open=True):
-    x = list(norm_alignment.keys())
+    x = [col for col in alignment_df.columns]
     alignment_by_taxunit = _by_taxunit(alignment_df)
     bars = []
     if host:
         host = '_'.join(host.split(sep=' '))
         if guests:
             print(guests)
-            guests = [g for g in map(lambda guest: '_'.join(guest.split(sep=' ')), guests)]
+            # guests = [g for g in map(lambda guest: '_'.join(guest.split(sep=' ')), guests)]
+            # guests = [g for g in map(lambda guest: '_'.join(guest.split(sep=' ')), list(guests))]
+            guests = [g for g in guests]
             title_text = 'Guests: {}; host: {}; analysis mode: {}'.format(guests, host, mode)
         else:
             # Unlikely? Overnight with host given?
             title_text = 'Host: {}; analysis mode: {}'.format(host, mode)
     elif guests:
+        print(guests)
+        guests = [g for g in guests]
+        # guests = [g for g in map(lambda guest: '_'.join(guest.split(sep=' ')), list(guests))]
+        print(guests)
         title_text = 'Guests: {}; analysis mode: {}'.format(guests, mode)
     else:
         # Overnight no host given?

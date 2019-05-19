@@ -94,11 +94,13 @@ def main_from_scratch(args):
     mode = args.mode
     host = args.host_specie
     guests = args.guest_species
+    print('Guests from input are: {}'.format(guests))
 
     helpers.initializer()
 
     if guests:
         guests = map(lambda guest: ' '.join(guest.split(sep='_')), guests)
+        print('Guests after map are: {}'.format(guests))
     if args.keep_genomes == 'yes':
         keep_genomes = True
     else:
@@ -121,9 +123,6 @@ def main_from_scratch(args):
     databases, genomes_length = gdatabase.multi_threaded_builder(genomes=genomes, max_chunk_size=max_chunk_size,
                                                                  keep_genomes=keep_genomes, n_threads=n_threads)
 
-    with open(os.path.join(gfetcher.GENOMES_PATH, 'going_to_enter_indexing'), 'wb'):
-        pass
-
     indexes = galigner.indexer(databases)
 
     with open(os.path.join(gfetcher.GENOMES_PATH, 'going_to_enter_alignment'), 'wb'):
@@ -132,15 +131,15 @@ def main_from_scratch(args):
     # Alignment and normalization
     alignment = galigner.multi_threaded_aligner(input_folder, indexes, mode='basic', n_threads=n_threads)
 
+    galigner.alignment_to_data_frame(alignment, output_folder=output_folder, filename='raw_monica.dataframe')
+
     norm_alignment = galigner.normalizer(alignment, genomes_length)
 
     alignment_df = galigner.alignment_to_data_frame(norm_alignment, output_folder=output_folder)
 
-    galigner.alignment_to_data_frame(alignment, output_folder=output_folder, filename='raw_monica.dataframe')
-
     # Plotting
-    barplot.plotter(norm_alignment, alignment_df, output_folder=output_folder, palette='jet',
-                    host=host, guests=guests, mode=mode, show_legend=show_legend, auto_open=auto_open_plot)
+    barplot.plotter(alignment_df, output_folder=output_folder, palette='jet',
+                    host=host, guests=args.guest_species, mode=mode, show_legend=show_legend, auto_open=auto_open_plot)
 
 
 def main_from_alignment(args):
@@ -165,9 +164,6 @@ def main_from_alignment(args):
 
     if use_old_databases:
         databases = os.path.join(gdatabase.DATABASES_PATH)
-
-        with open(os.path.join(gfetcher.GENOMES_PATH, 'going_to_enter_indexing'), 'wb'):
-            pass
 
         indexes = galigner.indexer(databases)
 
