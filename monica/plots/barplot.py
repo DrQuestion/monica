@@ -51,7 +51,7 @@ def plotter(alignment_df, output_folder=None, palette='jet',
             # guests = [g for g in map(lambda guest: '_'.join(guest.split(sep=' ')), guests)]
             # guests = [g for g in map(lambda guest: '_'.join(guest.split(sep=' ')), list(guests))]
             guests = [g for g in guests]
-            title_text = 'Guests: {}; host: {}; analysis mode: {}'.format(guests, host, mode)
+            title_text = 'Guests: {}; host: {}; analysis mode: {}'.format(', '.join(guests), host, mode)
         else:
             # Unlikely? Overnight with host given?
             title_text = 'Host: {}; analysis mode: {}'.format(host, mode)
@@ -60,7 +60,7 @@ def plotter(alignment_df, output_folder=None, palette='jet',
         guests = [g for g in guests]
         # guests = [g for g in map(lambda guest: '_'.join(guest.split(sep=' ')), list(guests))]
         print(guests)
-        title_text = 'Guests: {}; analysis mode: {}'.format(guests, mode)
+        title_text = 'Guests: {}; analysis mode: {}'.format(', '.join(guests), mode)
     else:
         # Overnight no host given?
         title_text = 'Analysis mode: {}'.format(mode)
