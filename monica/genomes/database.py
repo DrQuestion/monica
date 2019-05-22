@@ -1,7 +1,6 @@
 import os
 import pickle
 import gzip
-import shutil
 from itertools import count, repeat
 from multiprocessing.dummy import Pool as ThreadPool
 
@@ -10,10 +9,8 @@ from Bio import SeqIO
 from .fetcher import GENOMES_PATH
 
 
-GENOMES = os.path.join(GENOMES_PATH, '*.fna.gz')
 DATABASES_PATH = os.path.join(GENOMES_PATH, 'databases')
 DATABASE_NAME = ['database', '.fna.gz']
-EXCEPTIONS_PATH = os.path.join(GENOMES_PATH, 'exceptions')
 
 
 def multi_threaded_builder(genomes=None, max_chunk_size=None, database_name=DATABASE_NAME, keep_genomes=None, n_threads=None):
@@ -23,8 +20,6 @@ def multi_threaded_builder(genomes=None, max_chunk_size=None, database_name=DATA
         for database in os.listdir(DATABASES_PATH):
             if database.endswith('.fna.gz'):
                 os.remove(os.path.join(DATABASES_PATH, database))
-    if not os.path.exists(EXCEPTIONS_PATH):
-        os.mkdir(EXCEPTIONS_PATH)
 
     current_genomes_length = dict()
 
@@ -56,16 +51,12 @@ def builder(genomes_chunk, database_name, database_number):
         for genome in genomes_chunk:
             genome_length = 0
             new_header = ':'.join(genome[1])
-            try:
-                with gzip.open(genome[0], 'rt') as g:
-                    for seq_record in SeqIO.parse(g, 'fasta'):
-                        seq_record.id = new_header
-                        genome_length += len(seq_record)
-                        SeqIO.write(seq_record, database, 'fasta')
-                this_database_genomes_length[genome[1][1]] = genome_length
-            except:
-                print('{} failed database insertion'.format(genome))
-                shutil.move(genome, EXCEPTIONS_PATH)
+            with gzip.open(genome[0], 'rt') as g:
+                for seq_record in SeqIO.parse(g, 'fasta'):
+                    seq_record.id = new_header
+                    genome_length += len(seq_record)
+                    SeqIO.write(seq_record, database, 'fasta')
+            this_database_genomes_length[genome[1][1]] = genome_length
     return this_database_genomes_length
 
 

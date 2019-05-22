@@ -14,6 +14,7 @@ PARENTS = ['Fungi', 'Oomycota', 'Bacteria', 'Archaea', 'Viruses', 'Viroids',
 
 GENOMES_PATH = os.path.join(os.path.dirname(__file__), 'genomes')
 OLDIES_PATH = os.path.join(GENOMES_PATH, 'oldies')
+EXCEPTIONS_PATH = os.path.join(GENOMES_PATH, 'exceptions')
 
 NCBI_TAXA_UPDATE_LOG = 'ncbi_taxa_update_log'
 NCBI_TAXA_DAYS_THRESHOLD = 14
@@ -74,7 +75,7 @@ def ftp_selector(mode=None, species=[]):
             species_name.append(
                    '_'.join([name.split(sep=' ')[0], name.split(sep=' ')[1]]))
         merged_table['species_name']=species_name
-        merged_table=merged_table.drop_duplicates(subset=['species_name'], keep='last')
+        merged_table = merged_table.drop_duplicates(subset=['species_name'], keep='last')
 
     # modify ftps to obtain genomic dna file
     for ftp in merged_table.loc[:, 'ftp_path']:
@@ -95,6 +96,8 @@ def fetcher(table, oldies_path=OLDIES_PATH, keep_genomes=None, format_genomes=No
         os.mkdir(GENOMES_PATH)
     if not os.path.exists(oldies_path):
         os.mkdir(oldies_path)
+    if not os.path.exists(EXCEPTIONS_PATH):
+        os.mkdir(EXCEPTIONS_PATH)
 
     old = os.listdir(oldies_path)
 
@@ -107,9 +110,11 @@ def fetcher(table, oldies_path=OLDIES_PATH, keep_genomes=None, format_genomes=No
                 new_filename = os.path.join(oldies_path, '_'.join(new_header_components)+'.fna.gz')
             else:
                 new_filename = os.path.join(GENOMES_PATH, '_'.join(new_header_components)+'.fna.gz')
-
-            wget.download(ftp, out=new_filename)
-            genomes.append((new_filename, new_header_components))
+            try:
+                wget.download(ftp, out=new_filename)
+                genomes.append((new_filename, new_header_components))
+            except FileNotFoundError:
+                print('{} failed download'.format(ftp))
 
     elif not old and format_genomes:
         genomes_to_format = [file for file in os.listdir(format_genomes) if file.endswith('fna.gz')]
@@ -127,8 +132,11 @@ def fetcher(table, oldies_path=OLDIES_PATH, keep_genomes=None, format_genomes=No
                     new_filename = os.path.join(oldies_path, '_'.join(new_header_components) + '.fna.gz')
                 else:
                     new_filename = os.path.join(GENOMES_PATH, '_'.join(new_header_components) + '.fna.gz')
-                wget.download(ftp, out=new_filename)
-                genomes.append((new_filename, new_header_components))
+                try:
+                    wget.download(ftp, out=new_filename)
+                    genomes.append((new_filename, new_header_components))
+                except FileNotFoundError:
+                    print('{} failed download'.format(ftp))
 
     elif old and not format_genomes:
         for row in table.iterrows():
@@ -146,9 +154,12 @@ def fetcher(table, oldies_path=OLDIES_PATH, keep_genomes=None, format_genomes=No
                     new_filename = os.path.join(oldies_path, base_new_filename)
                 else:
                     new_filename = os.path.join(GENOMES_PATH, base_new_filename)
-                wget.download(ftp, out=new_filename)
-                new_genomes.append(base_new_filename.split(sep='.')[0])
-                genomes.append((new_filename, new_header_components))
+                try:
+                    wget.download(ftp, out=new_filename)
+                    new_genomes.append(base_new_filename.split(sep='.')[0])
+                    genomes.append((new_filename, new_header_components))
+                except FileNotFoundError:
+                    print('{} failed download'.format(ftp))
         oldies_cleaner(new_genomes, old, oldies_path)
 
     else:
@@ -174,9 +185,12 @@ def fetcher(table, oldies_path=OLDIES_PATH, keep_genomes=None, format_genomes=No
                         new_filename = os.path.join(oldies_path, base_new_filename)
                     else:
                         new_filename = os.path.join(GENOMES_PATH, base_new_filename)
-                    wget.download(ftp, out=new_filename)
-                    new_genomes.append(base_new_filename.split(sep='.')[0])
-                    genomes.append((new_filename, new_header_components))
+                    try:
+                        wget.download(ftp, out=new_filename)
+                        new_genomes.append(base_new_filename.split(sep='.')[0])
+                        genomes.append((new_filename, new_header_components))
+                    except FileNotFoundError:
+                        print('{} failed download'.format(ftp))
         oldies_cleaner(new_genomes, old, oldies_path)
 
     print('Finished genomes retrieval in {} seconds'.format(time.time()-t0))
