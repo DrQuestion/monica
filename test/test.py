@@ -45,6 +45,6 @@ if __name__ == '__main__':
     df= test_aligner.test_aligner_alignment_to_data_frame(alignment, output=output)
     print(f'Dataframe conversion took {time.time()-time6} seconds')
 
-    barplot.plotter(norm_alignment=alignment, alignment_df=df, output_folder=output, guests=guests, mode=mode,
+    barplot.plotter(norm_alignment=alignment, norm_alignment_df=df, output_folder=output, guests=guests, mode=mode,
                     auto_open=auto_open, show_legend=show_legend)
 

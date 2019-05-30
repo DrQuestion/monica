@@ -10,7 +10,7 @@ REFSEQ_SUMMARY_FTP = 'ftp://ftp.ncbi.nlm.nih.gov/genomes/refseq/assembly_summary
 GENBANK_SUMMARY_FTP = 'ftp://ftp.ncbi.nlm.nih.gov/genomes/genbank/assembly_summary_genbank.txt'
 LOG_FILE = os.path.join(TABLES_PATH, 'log')
 HEADER_LINE = 1
-USE_COLS = [0, 5, 7, 8, 9, 19]
+USE_COLS = [0, 5, 6, 7, 8, 9, 19]
 
 
 def fetcher():

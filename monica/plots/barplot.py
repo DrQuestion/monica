@@ -6,9 +6,9 @@ import matplotlib.pyplot as mplt
 
 
 OPACITY = 0.75
+READS_THRESHOLD = 15
 
 
-# TODO: add host species '_(host)' suffix when host present by using an host parameter default None
 # TODO: add optionality by interactive button to switch to CVD-friendly color palette (purples?)
 # TODO: represent on another barplot aside the unmapped material in bases sequenced colored in grey
 # TODO: add hover table showing information on the selected taxunit, like score distribution among strains and barcode
@@ -26,6 +26,19 @@ def _by_taxunit(dataframe):
     return by_taxunit
 
 
+def filter_low_reads(norm, plain, threshold):
+    for taxunit in plain.keys():
+        total = 0
+        less_than_threshold = 0
+        for count in plain[taxunit]:
+            if count <= threshold:
+                less_than_threshold += count
+            total += count
+        if less_than_threshold == total:
+            norm.pop(taxunit)
+    return norm
+
+
 def color_generator(n_elements, palette):
     cmap = mplt.get_cmap(name=palette)
     colors = cmap(np.linspace(0, 1, n_elements))
@@ -39,40 +52,36 @@ def color_generator(n_elements, palette):
     return spaces, lines
 
 
-def plotter(alignment_df, output_folder=None, palette='jet',
+def plotter(norm_alignment_df, raw_alignment_df, output_folder=None, palette='jet', reads_threshold=READS_THRESHOLD,
             host=None, guests=None, mode=None, show_legend=True, auto_open=True):
-    x = [col for col in alignment_df.columns]
-    alignment_by_taxunit = _by_taxunit(alignment_df)
+    x = [col for col in norm_alignment_df.columns]
+    norm_alignment_by_taxunit = _by_taxunit(norm_alignment_df)
+    raw_alignment_by_taxunit = _by_taxunit(raw_alignment_df)
+    norm_alignment_by_taxunit = filter_low_reads(norm_alignment_by_taxunit, raw_alignment_by_taxunit, reads_threshold)
     bars = []
     if host:
         host = '_'.join(host.split(sep=' '))
         if guests:
-            print(guests)
-            # guests = [g for g in map(lambda guest: '_'.join(guest.split(sep=' ')), guests)]
-            # guests = [g for g in map(lambda guest: '_'.join(guest.split(sep=' ')), list(guests))]
             guests = [g for g in guests]
             title_text = 'Guests: {}; host: {}; analysis mode: {}'.format(', '.join(guests), host, mode)
         else:
             # Unlikely? Overnight with host given?
             title_text = 'Host: {}; analysis mode: {}'.format(host, mode)
     elif guests:
-        print(guests)
         guests = [g for g in guests]
-        # guests = [g for g in map(lambda guest: '_'.join(guest.split(sep=' ')), list(guests))]
-        print(guests)
         title_text = 'Guests: {}; analysis mode: {}'.format(', '.join(guests), mode)
     else:
         # Overnight no host given?
         title_text = 'Analysis mode: {}'.format(mode)
-    colors_spaces, colors_lines = color_generator(len(alignment_by_taxunit), palette)
-    for taxunit, color_space, color_line in zip(alignment_by_taxunit.keys(), colors_spaces, colors_lines):
+    colors_spaces, colors_lines = color_generator(len(norm_alignment_by_taxunit), palette)
+    for taxunit, color_space, color_line in zip(norm_alignment_by_taxunit.keys(), colors_spaces, colors_lines):
         if taxunit == host:
             name = taxunit + '_(host)'
         else:
             name = taxunit
         bars.append(go.Bar(
             x=x,
-            y=list(alignment_by_taxunit[taxunit]),
+            y=list(norm_alignment_by_taxunit[taxunit]),
             name=name,
             marker=dict(
                 color=color_space,
@@ -101,7 +110,7 @@ def plotter(alignment_df, output_folder=None, palette='jet',
         hovermode='closest',
         showlegend=show_legend,
         legend=dict(
-            orientation='h'
+            orientation='v'
         )
     )
 
