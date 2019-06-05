@@ -1,5 +1,7 @@
 #! /usr/bin/env python3.6
 
+# TODO log system when launching monica from scratch to save all parameters, to keep host, guests and mode
+
 import os
 import argparse
 
@@ -100,20 +102,18 @@ def main_from_scratch(args):
     if args.indexing_memory:
         indexing_memory = args.indexing_memory
     else:
-        indexing_memory = psutil.virtual_memory().total/2
+        indexing_memory = psutil.virtual_memory().total/4
 
     max_chunk_size = indexing_memory/16
 
     mode = args.mode
     host = args.host_specie
     guests = args.guest_species
-    print('Guests from input are: {}'.format(guests))
 
     helpers.initializer()
 
     if guests:
         guests = map(lambda guest: ' '.join(guest.split(sep='_')), guests)
-        print('Guests after map are: {}'.format(guests))
     if args.keep_genomes == 'yes':
         keep_genomes = True
     else:
@@ -212,6 +212,8 @@ def main_indexes_building_only():
 
 
 def main_from_plotting(args):
+
+    # Input handling
     data_frame_path = args.data_frame
     ex_out_dir = os.path.dirname(data_frame_path)
     r_data_frame_path = os.path.join(ex_out_dir, 'raw_monica.dataframe')
@@ -237,6 +239,14 @@ def main_from_plotting(args):
         # Plotting
         barplot.plotter(n_alignment_df, r_alignment_df, output_folder=output_folder, palette='jet',
                         reads_threshold=reads_threshold, show_legend=show_legend, auto_open=auto_open_plot)
+
+
+def focus_mode(input_folder, output_folder, n_threads, auto_open_plot, show_legend, reads_threshold, max_chunk_size,
+               focus_species, keep_genomes, oldies_path):
+    input_folder = os.path.join(input_folder, 'focus')
+    output_folder = os.path.join(output_folder, 'focus')
+    focus_species = map(lambda specie: ' '.join(specie.split(sep='_')), focus_species)
+
 
 
 if __name__ == '__main__':

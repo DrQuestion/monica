@@ -20,7 +20,7 @@ NCBI_TAXA_UPDATE_LOG = 'ncbi_taxa_update_log'
 NCBI_TAXA_DAYS_THRESHOLD = 14
 
 
-def descendants_taxid_finder(species=[]):
+def descendants_taxid_finder(species=[], focus=False):
     ncbi = NCBITaxa()
     if not ncbi_taxa_updated():
         with open(os.path.join(os.path.dirname(__file__), NCBI_TAXA_UPDATE_LOG), 'w+') as log:
@@ -28,9 +28,15 @@ def descendants_taxid_finder(species=[]):
         ncbi.update_taxonomy_database()
     descendants = []
     for specie in species:
+        for i in ncbi.get_name_translator([specie])[specie]:
+            descendants.append(str(i))
         for i in ncbi.get_descendant_taxa(specie):
             descendants.append(str(i))
-    taxids = pd.DataFrame(descendants, columns=['taxid'])
+    print(descendants)
+    if not focus:
+        taxids = pd.DataFrame(descendants, columns=['taxid'])
+    else:
+        taxids = pd.DataFrame(descendants, columns=['species_taxid'])
     return taxids
 
 
@@ -67,7 +73,7 @@ def ftp_selector(mode=None, species=[]):
         merged_table['species_name'] = species_name
 
     elif mode == 'single':
-        print ('Activated single mode')
+        print('Activated single mode')
         taxids=descendants_taxid_finder(species)
         table=tables.importer(which='refseq')
         merged_table = table.merge(taxids, on='taxid')
@@ -75,6 +81,26 @@ def ftp_selector(mode=None, species=[]):
             species_name.append(
                    '_'.join([name.split(sep=' ')[0], name.split(sep=' ')[1]]))
         merged_table['species_name']=species_name
+        merged_table = merged_table.drop_duplicates(subset=['species_name'], keep='last')
+
+    elif mode == 'focus':
+        print('Activated focus mode')
+        taxids = descendants_taxid_finder(species, focus=True)
+        table = tables.importer(which='genbank')
+        merged_table = table.merge(taxids, on='species_taxid')
+
+        for name, strain in zip(merged_table.loc[:, 'organism_name'], merged_table.loc[:, 'infraspecific_name']):
+            if not isinstance(strain, float):
+                strain = strain.split(sep='=')[1]
+                if not name.endswith(strain):
+                    name = name.replace('.', '')+' '+strain
+                else:
+                    name = name.replace(strain, '')
+                    name = name.replace('.', '') + strain
+            name = name.replace(' ', '_')
+            species_name.append(name)
+
+        merged_table['species_name'] = species_name
         merged_table = merged_table.drop_duplicates(subset=['species_name'], keep='last')
 
     # modify ftps to obtain genomic dna file
@@ -197,10 +223,49 @@ def fetcher(table, oldies_path=OLDIES_PATH, keep_genomes=None, format_genomes=No
     return genomes
 
 
+def focus_fetcher(table, oldies_path=OLDIES_PATH, keep_genomes=None):
+    t0 = time.time()
+
+    genomes = []
+    new_genomes = []
+
+    old = os.listdir(oldies_path)
+    temp_genomes = [file for file in os.listdir(GENOMES_PATH) if file.endswith('fna.gz')]
+
+    for row in table.iterrows():
+        ftp = row[1]['ftp_path']
+        organism_name = row[1][-1]
+        accession = row[1]['# assembly_accession'].split(sep='_')[-1]
+        base_new_filename = '_'.join(['_'.join(organism_name.split('_')[0:2]), accession]) + '.fna.gz'
+        if base_new_filename in old:
+            new_filename=os.path.join(oldies_path, base_new_filename)
+            genomes.append((new_filename, [organism_name, accession]))
+            old.remove(base_new_filename)
+        elif base_new_filename in temp_genomes:
+            new_filename = os.path.join(GENOMES_PATH, base_new_filename)
+            genomes.append((new_filename, [organism_name, accession]))
+            temp_genomes.remove(base_new_filename)
+        else:
+            if keep_genomes:
+                new_filename = os.path.join(oldies_path, base_new_filename)
+            else:
+                new_filename = os.path.join(GENOMES_PATH, base_new_filename)
+            try:
+                wget.download(ftp, out=new_filename)
+                new_genomes.append(base_new_filename.split(sep='.')[0])
+                genomes.append((new_filename, [organism_name, accession]))
+            except FileNotFoundError:
+                print('{} failed download'.format(ftp))
+
+    oldies_cleaner(new_genomes, old, oldies_path)
+    print('Finished genomes to focus on retrieval in {} seconds'.format(time.time() - t0))
+    return genomes
+
+
 def ncbi_taxa_updated():
-    if not NCBI_TAXA_UPDATE_LOG in os.listdir(os.path.dirname(__file__)):
+    if NCBI_TAXA_UPDATE_LOG not in os.listdir(os.path.dirname(__file__)):
         return 0
-    with open (os.path.join(os.path.dirname(__file__), NCBI_TAXA_UPDATE_LOG), 'r') as log:
+    with open(os.path.join(os.path.dirname(__file__), NCBI_TAXA_UPDATE_LOG), 'r') as log:
         date = log.read()
     date = dt.datetime.strptime(date, '%Y-%m-%d')
     delta = dt.datetime.now() - date

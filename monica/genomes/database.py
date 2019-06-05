@@ -13,25 +13,28 @@ DATABASES_PATH = os.path.join(GENOMES_PATH, 'databases')
 DATABASE_NAME = ['database', '.fna.gz']
 
 
-def multi_threaded_builder(genomes=None, max_chunk_size=None, database_name=DATABASE_NAME, keep_genomes=None, n_threads=None):
-    if not os.path.exists(DATABASES_PATH):
-        os.mkdir(DATABASES_PATH)
+def multi_threaded_builder(genomes=None, max_chunk_size=None, databases_path=DATABASES_PATH,
+                           database_name=DATABASE_NAME, keep_genomes=None, n_threads=None):
+    if not os.path.exists(databases_path):
+        os.mkdir(databases_path)
     else:
-        for database in os.listdir(DATABASES_PATH):
+        for database in os.listdir(databases_path):
             if database.endswith('.fna.gz'):
-                os.remove(os.path.join(DATABASES_PATH, database))
+                os.remove(os.path.join(databases_path, database))
 
     current_genomes_length = dict()
 
     pool = ThreadPool(n_threads)
 
-    lengths = pool.starmap(builder, zip(_genomes_splitter(genomes, max_chunk_size=max_chunk_size), repeat(database_name), count()))
+    lengths = pool.starmap(builder, zip(_genomes_splitter(genomes, max_chunk_size=max_chunk_size),
+                                        repeat(databases_path), repeat(database_name), count()))
 
     for length in lengths:
         current_genomes_length.update(length)
 
     if not keep_genomes:
         # delete genomes without storing them
+        # TODO: if focus and a genome belongs to focus, don't delete it
         for genome in os.listdir(GENOMES_PATH):
             if genome.endswith('.fna.gz'):
                 os.remove(os.path.join(GENOMES_PATH, genome))
@@ -40,11 +43,11 @@ def multi_threaded_builder(genomes=None, max_chunk_size=None, database_name=DATA
 
     with open(os.path.join(GENOMES_PATH, 'database_created'), 'wb'):
         pass
-    return DATABASES_PATH, current_genomes_length
+    return databases_path, current_genomes_length
 
 
-def builder(genomes_chunk, database_name, database_number):
-    database_file = os.path.join(DATABASES_PATH, str(database_number).join(database_name))
+def builder(genomes_chunk, databases_path, database_name, database_number):
+    database_file = os.path.join(databases_path, str(database_number).join(database_name))
     print('Working on {}'.format(str(database_number).join(database_name)))
     this_database_genomes_length = dict()
     with gzip.open(database_file, 'wt') as database:
