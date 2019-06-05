@@ -9,6 +9,7 @@ OPACITY = 0.75
 READS_THRESHOLD = 15
 
 
+# TODO IMPORTANT: make plot title customizable
 # TODO: add optionality by interactive button to switch to CVD-friendly color palette (purples?)
 # TODO: represent on another barplot aside the unmapped material in bases sequenced colored in grey
 # TODO: add hover table showing information on the selected taxunit, like score distribution among strains and barcode

@@ -232,6 +232,7 @@ def focus_fetcher(table, oldies_path=OLDIES_PATH, keep_genomes=None):
     old = os.listdir(oldies_path)
     temp_genomes = [file for file in os.listdir(GENOMES_PATH) if file.endswith('fna.gz')]
 
+    print('Started genomes to focus on retrieval')
     for row in table.iterrows():
         ftp = row[1]['ftp_path']
         organism_name = row[1][-1]

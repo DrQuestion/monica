@@ -27,6 +27,8 @@ def main():
                         help='The folder where output files will be stored')
     parser.add_argument('-t', '--threads', type=int, default=3,
                         help='The number of threads to be used')
+    parser.add_argument('-F', '--focus_species', nargs='*',
+                        help='Species of interest among the whole guests selected, focus analysis on their subspecies')
     parser.add_argument('--not_auto_open_plot', action='store_true',
                         help='If wishing NOT to plot the results at the and of the analysis')
     parser.add_argument('--not_show_legend', action='store_true',
@@ -95,9 +97,11 @@ def main_from_scratch(args):
 
     n_threads = args.threads
 
+    focus_species = args.focus_species
+
     auto_open_plot = not args.not_auto_open_plot
     show_legend = not args.not_show_legend
-    reads_threshold=args.reads_threshold
+    reads_threshold = args.reads_threshold
 
     if args.indexing_memory:
         indexing_memory = args.indexing_memory
@@ -134,6 +138,7 @@ def main_from_scratch(args):
 
     # Database building and indexing
     databases, genomes_length = gdatabase.multi_threaded_builder(genomes=genomes, max_chunk_size=max_chunk_size,
+                                                                 databases_path=gdatabase.DATABASES_PATH,
                                                                  keep_genomes=keep_genomes, n_threads=n_threads)
 
     indexes = galigner.indexer(databases)
@@ -142,7 +147,7 @@ def main_from_scratch(args):
         pass
 
     # Alignment and normalization
-    alignment = galigner.multi_threaded_aligner(input_folder, indexes, mode='basic', n_threads=n_threads)
+    alignment = galigner.multi_threaded_aligner(input_folder, indexes, mode='basic', n_threads=n_threads, )
 
     raw_alignment_df = galigner.alignment_to_data_frame(alignment, output_folder=output_folder,
                                                         filename='raw_monica.dataframe')
@@ -155,6 +160,10 @@ def main_from_scratch(args):
     barplot.plotter(norm_alignment_df, raw_alignment_df, output_folder=output_folder, palette='jet',
                     reads_threshold=reads_threshold, host=host, guests=args.guest_species, mode=mode,
                     show_legend=show_legend, auto_open=auto_open_plot)
+
+    if focus_species:
+        focus_mode(input_folder, output_folder, n_threads, auto_open_plot, show_legend, reads_threshold, max_chunk_size,
+                   focus_species, keep_genomes, oldies_path)
 
 
 def main_from_alignment(args):

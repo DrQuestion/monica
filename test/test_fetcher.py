@@ -19,8 +19,8 @@ def main_test ():
 
 if __name__ == '__main__':
 
-    t = test_ftp_selector(mode='focus', species=['Xylella fastidiosa'])
-    fetcher.focus_fetcher(t)
+    t = test_ftp_selector(mode='single', species=['Xylella fastidiosa'])
+    print(fetcher.focus_fetcher(t))
 
 # ['2371', '1947786', '1444770', '405952', '405953', '405954', '570946', '542288', '483031', '380250']
 # ['2371', '1947786', '1444770', '405952', '405953', '405954', '570946', '542288', '483031', '380250']
