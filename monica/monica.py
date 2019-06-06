@@ -33,8 +33,6 @@ def main():
                                    'Default is {}'.format(gfetcher.OLDIES_PATH))
     parser.add_argument('-k', '--keep_genomes', choices=['yes', 'no'], default='yes',
                               help='Choose if genomes are to be kept in -g. Default is "yes"')
-    parser.add_argument('-F', '--focus_species', nargs='*',
-                        help='Species of interest among the whole guests selected, focus analysis on their subspecies')
     parser.add_argument('-im', '--indexing_memory', type=helpers.human_readable,
                               help='The maximum memory the user wishes to be used during indexing. '
                                    'Must end with a unit of measure among B|K|M|G|T.'
@@ -57,6 +55,8 @@ def main():
                         help='Guest species hypothesized to be present in the sample, '
                              'underscore separated ("Genus_specie"), but also higher levels of the tree of life, '
                              'like order or genus only')
+    from_scratch.add_argument('-F', '--focus_species', nargs='*',
+                        help='Species of interest among the whole guests selected, focus analysis on their subspecies')
     from_scratch.add_argument('--format_genomes',
                         help='Folder, call it together with -m and -H/-G, when assembly-formatted genomes '
                              'are present in it without being formatted for monica')
@@ -65,6 +65,8 @@ def main():
     from_scratch.set_defaults(func=main_from_scratch)
 
     from_alignment = subparsers.add_parser('from_alignment', help='To run monica given an already built index/database')
+    from_alignment.add_argument('-F', '--focus_species', nargs='*',
+                        help='Species of interest among the whole guests selected, focus analysis on their subspecies')
     from_alignment.add_argument('-upi', '--use_prebuilt_indexes', action='store_true',
                         help='Use the index of the previous analysis, useful for frequent use of the same genomes')
     from_alignment.add_argument('-upd', '--use_prebuilt_databases', action='store_true')
@@ -147,13 +149,15 @@ def main_from_scratch(args):
     if focus_species:
         focus_input_folder = os.path.join(input_folder, 'focus')
         focus_output_folder = os.path.join(output_folder, 'focus')
+        if not os.path.exists(focus_output_folder):
+            os.mkdir(focus_output_folder)
 
         helpers.initializer(focus_output_folder)
 
         focus_databases_path = os.path.join(gdatabase.DATABASES_PATH, 'focus')
         focus_species = map(lambda specie: ' '.join(specie.split(sep='_')), focus_species)
         focus_ftp_table = gfetcher.ftp_selector(mode='focus', species=focus_species)
-        focus_genomes = gfetcher.fetcher(focus_ftp_table, oldies_path=oldies_path, keep_genomes=keep_genomes)
+        focus_genomes = gfetcher.focus_fetcher(focus_ftp_table, oldies_path=oldies_path, keep_genomes=keep_genomes)
         focus_databases, focus_genomes_length = gdatabase.multi_threaded_builder(genomes=focus_genomes,
                                                                                  max_chunk_size=max_chunk_size,
                                                                                  keep_genomes=keep_genomes,
@@ -166,7 +170,7 @@ def main_from_scratch(args):
 
     # Alignment and normalization:
     alignment = galigner.multi_threaded_aligner(input_folder, indexes, mode='basic', n_threads=n_threads,
-                                                focus_species=focus_species, output_folder=output_folder)
+                                                focus_species=args.focus_species, output_folder=output_folder)
 
     raw_alignment_df = galigner.alignment_to_data_frame(alignment, output_folder=output_folder,
                                                         filename='raw_monica.dataframe')
@@ -189,7 +193,7 @@ def main_from_scratch(args):
         focus_norm_alignment_df = galigner.alignment_to_data_frame(focus_norm_alignment, 
                                                                    output_folder=focus_output_folder)
         barplot.plotter(focus_norm_alignment_df, focus_raw_alignment_df, output_folder=focus_output_folder, 
-                        palette='jet', reads_threshold=reads_threshold, guests=args.focus_species, mode='focus',
+                        palette='jet', reads_threshold=0, guests=args.focus_species, mode='focus',
                         show_legend=show_legend, auto_open=auto_open_plot)
         
         
@@ -234,7 +238,8 @@ def main_from_alignment(args):
         pass
 
     # Alignment and normalization:
-    alignment = galigner.multi_threaded_aligner(input_folder, indexes, mode='basic', n_threads=n_threads)
+    alignment = galigner.multi_threaded_aligner(input_folder, indexes, mode='basic', n_threads=n_threads,
+                                                focus_species=args.focus_species, output_folder=output_folder)
 
     raw_alignment_df = galigner.alignment_to_data_frame(alignment, output_folder=output_folder,
                                                         filename='raw_monica.dataframe')
@@ -262,13 +267,15 @@ def main_from_alignment(args):
         max_chunk_size = indexing_memory / 16
         focus_input_folder = os.path.join(input_folder, 'focus')
         focus_output_folder = os.path.join(output_folder, 'focus')
+        if not os.path.exists(focus_output_folder):
+            os.mkdir(focus_output_folder)
 
         helpers.initializer(focus_output_folder)
 
         focus_databases_path = os.path.join(gdatabase.DATABASES_PATH, 'focus')
         focus_species = map(lambda specie: ' '.join(specie.split(sep='_')), focus_species)
         focus_ftp_table = gfetcher.ftp_selector(mode='focus', species=focus_species)
-        focus_genomes = gfetcher.fetcher(focus_ftp_table, oldies_path=oldies_path, keep_genomes=keep_genomes)
+        focus_genomes = gfetcher.focus_fetcher(focus_ftp_table, oldies_path=oldies_path, keep_genomes=keep_genomes)
         focus_databases, focus_genomes_length = gdatabase.multi_threaded_builder(genomes=focus_genomes,
                                                                                  max_chunk_size=max_chunk_size,
                                                                                  keep_genomes=keep_genomes,
@@ -283,7 +290,7 @@ def main_from_alignment(args):
         focus_norm_alignment_df = galigner.alignment_to_data_frame(focus_norm_alignment,
                                                                    output_folder=focus_output_folder)
         barplot.plotter(focus_norm_alignment_df, focus_raw_alignment_df, output_folder=focus_output_folder,
-                        palette='jet', reads_threshold=reads_threshold, guests=args.focus_species, mode='focus',
+                        palette='jet', reads_threshold=0, guests=args.focus_species, mode='focus',
                         show_legend=show_legend, auto_open=auto_open_plot)
 
 

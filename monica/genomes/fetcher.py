@@ -32,7 +32,6 @@ def descendants_taxid_finder(species=[], focus=False):
             descendants.append(str(i))
         for i in ncbi.get_descendant_taxa(specie):
             descendants.append(str(i))
-    print(descendants)
     if not focus:
         taxids = pd.DataFrame(descendants, columns=['taxid'])
     else:

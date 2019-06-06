@@ -28,7 +28,8 @@ def indexer(databases, indexes_path=INDEXES_PATH):
         os.mkdir(indexes_path)
     else:
         for index in os.listdir(indexes_path):
-            os.remove(os.path.join(indexes_path, index))
+            if index.endswith('.mmi'):
+                os.remove(os.path.join(indexes_path, index))
     indexes = []
 
     with open(os.path.join(GENOMES_PATH, 'entered_indexer'), 'wb'):
@@ -36,8 +37,8 @@ def indexer(databases, indexes_path=INDEXES_PATH):
     for database in os.listdir(databases):
         if database.endswith('.fna.gz'):
             number = os.path.split(database)[1][8:-7]
-            index = mappy.Aligner(fn_idx_in=os.path.join(DATABASES_PATH, database), preset='map-ont', best_n=BEST_N,
-                                  fn_idx_out=bytes(os.path.join(INDEXES_PATH, str(number).join(INDEX_NAME)),
+            index = mappy.Aligner(fn_idx_in=os.path.join(databases, database), preset='map-ont', best_n=BEST_N,
+                                  fn_idx_out=bytes(os.path.join(indexes_path, str(number).join(INDEX_NAME)),
                                                    encoding='utf-8'))
             if not index:
                 raise Exception('Index building failed')
@@ -65,7 +66,7 @@ def multi_threaded_aligner(query_folder, indexes, mode=None, overnight=False, n_
 
     os.chdir(query_folder)
 
-    samples = [file for file in os.listdir('.') if file.endswith('fastq')]
+    samples = [file for file in os.listdir('.') if file.endswith('fastq') and os.stat(file).st_size]
     samples_name = list(map(lambda sample_name: sample_name.split('.')[0], samples))
 
     mapped_folder = os.path.join(query_folder, mapped_files_folder)
