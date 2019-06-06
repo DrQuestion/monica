@@ -2,7 +2,7 @@ import os
 from re import search
 from argparse import ArgumentTypeError
 
-from genomes.aligner import ALIGNMENT_PICKLE
+from genomes.aligner import ALIGNMENT_PICKLE_FILENAME
 
 
 def human_readable(indexing_memory):
@@ -27,9 +27,9 @@ def human_readable_to_byte(indexing_memory):
     return to_byte
 
 
-def initializer():
-    if os.path.exists(ALIGNMENT_PICKLE):
-        os.remove(ALIGNMENT_PICKLE)
+def initializer(output_folder):
+    if os.path.exists(os.path.join(output_folder, ALIGNMENT_PICKLE_FILENAME)):
+        os.remove(os.path.join(output_folder, ALIGNMENT_PICKLE_FILENAME))
 
 
 if __name__ == '__main__':

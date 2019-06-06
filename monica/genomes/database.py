@@ -39,7 +39,7 @@ def multi_threaded_builder(genomes=None, max_chunk_size=None, databases_path=DAT
             if genome.endswith('.fna.gz'):
                 os.remove(os.path.join(GENOMES_PATH, genome))
 
-    pickle.dump(current_genomes_length, open(os.path.join(GENOMES_PATH, 'current_genomes_length.pkl'), 'wb'))
+    pickle.dump(current_genomes_length, open(os.path.join(databases_path, 'current_genomes_length.pkl'), 'wb'))
 
     with open(os.path.join(GENOMES_PATH, 'database_created'), 'wb'):
         pass

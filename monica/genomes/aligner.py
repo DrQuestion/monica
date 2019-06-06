@@ -16,7 +16,6 @@ INDEXES_PATH = os.path.join(os.path.dirname(__file__), 'indexes')
 INDEX_NAME = ['index', '.mmi']
 
 ALIGNMENT_PICKLE_FILENAME = 'alignment.pkl'
-ALIGNMENT_PICKLE = os.path.join(os.path.dirname(__file__), ALIGNMENT_PICKLE_FILENAME)
 
 MAPPED_FILES_FOLDER = 'mapped'
 UNMAPPED_FILES_FOLDER = 'unmapped'
@@ -38,7 +37,8 @@ def indexer(databases, indexes_path=INDEXES_PATH):
         if database.endswith('.fna.gz'):
             number = os.path.split(database)[1][8:-7]
             index = mappy.Aligner(fn_idx_in=os.path.join(DATABASES_PATH, database), preset='map-ont', best_n=BEST_N,
-                                  fn_idx_out=bytes(os.path.join(INDEXES_PATH, str(number).join(INDEX_NAME)), encoding='utf-8'))
+                                  fn_idx_out=bytes(os.path.join(INDEXES_PATH, str(number).join(INDEX_NAME)),
+                                                   encoding='utf-8'))
             if not index:
                 raise Exception('Index building failed')
             indexes.append(index)
@@ -59,8 +59,10 @@ def indexes_opener(indexes_path=INDEXES_PATH):
 
 
 def multi_threaded_aligner(query_folder, indexes, mode=None, overnight=False, n_threads=None, focus_species=[],
-                           mapped_files_folder=MAPPED_FILES_FOLDER, unmapped_files_folder=UNMAPPED_FILES_FOLDER,
-                           ambiguous_files_folder=AMBIGUOUS_FILES_FOLDER, focus_file_folder=FOCUS_FILES_FOLDER):
+                           output_folder=None, mapped_files_folder=MAPPED_FILES_FOLDER,
+                           unmapped_files_folder=UNMAPPED_FILES_FOLDER, ambiguous_files_folder=AMBIGUOUS_FILES_FOLDER,
+                           focus_file_folder=FOCUS_FILES_FOLDER):
+
     os.chdir(query_folder)
 
     samples = [file for file in os.listdir('.') if file.endswith('fastq')]
@@ -84,7 +86,7 @@ def multi_threaded_aligner(query_folder, indexes, mode=None, overnight=False, n_
                                         itertools.repeat(mapped_folder), itertools.repeat(unmapped_folder),
                                         itertools.repeat(ambiguous_folder), itertools.repeat(focus_folder)))
 
-    alignment = alignment_update(results)
+    alignment = alignment_update(results, output_folder)
 
     return alignment
 
@@ -154,9 +156,10 @@ def aligner(sample, sample_name, indexes, mode=None, overnight=False, focus_spec
     return sample_alignment, sample_name
 
 
-def alignment_update(results):
-    if ALIGNMENT_PICKLE_FILENAME in os.listdir(os.path.dirname(__file__)):
-        alignment = pickle.load(open(ALIGNMENT_PICKLE, 'rb'))
+def alignment_update(results, output_folder):
+    alignment_pickle = os.path.join(output_folder, ALIGNMENT_PICKLE_FILENAME)
+    if ALIGNMENT_PICKLE_FILENAME in os.listdir(output_folder):
+        alignment = pickle.load(open(alignment_pickle, 'rb'))
         for alignment_sample, sample_name in results:
             if sample_name in alignment:
                 for tax_unit, counter in alignment_sample.items():
@@ -171,14 +174,14 @@ def alignment_update(results):
         for alignment_sample, sample_name in results:
             alignment[sample_name] = alignment_sample
 
-    pickle.dump(alignment, open(ALIGNMENT_PICKLE, 'wb'))
+    pickle.dump(alignment, open(alignment_pickle, 'wb'))
 
     return alignment
 
 
-def normalizer(alignment, genomes_length=None):
+def normalizer(alignment, genomes_length=None, databases_path=None):
     if not genomes_length:
-        genomes_length = pickle.load(open(os.path.join(GENOMES_PATH, 'current_genomes_length.pkl'), 'rb'))
+        genomes_length = pickle.load(open(os.path.join(databases_path, 'current_genomes_length.pkl'), 'rb'))
     for sample in alignment.keys():
         sample_total = 0
         for tax_unit, counter in alignment[sample].items():
