@@ -27,6 +27,8 @@ def main():
                         help='The folder where output files will be stored')
     parser.add_argument('-t', '--threads', type=int, default=3,
                         help='The number of threads to be used')
+    parser.add_argument('-a', '--alignment_mode', default='query_length',
+                              help='The alignment mode to be performed')
     parser.add_argument('-g', '--genomes_folder', default=gfetcher.OLDIES_PATH,
                               help='The folder where already stored genomes will be found '
                                    'and new genomes will be stored if --keep_genomes option is set to "yes". '
@@ -41,7 +43,7 @@ def main():
                         help='If wishing NOT to plot the results at the and of the analysis')
     parser.add_argument('--not_show_legend', action='store_true',
                         help='If wishing NOT to show legend')
-    parser.add_argument('-r', '--reads_threshold', default=barplot.READS_THRESHOLD,
+    parser.add_argument('-r', '--reads_threshold', default=0,
                         help='Threshold of reads for a specie in each sample that will be displayed in the plot. '
                              'If lower in all samples species not displayed. '
                              'Default is {}'.format(barplot.READS_THRESHOLD))
@@ -70,6 +72,14 @@ def main():
     from_alignment.add_argument('-upi', '--use_prebuilt_indexes', action='store_true',
                         help='Use the index of the previous analysis, useful for frequent use of the same genomes')
     from_alignment.add_argument('-upd', '--use_prebuilt_databases', action='store_true')
+    from_alignment.add_argument('-H', '--host_specie',
+                        help='Host species where samples come from, underscore separated ("Genus_specie")')
+    from_alignment.add_argument('-G', '--guest_species', nargs='*',
+                        help='Guest species hypothesized to be present in the sample, '
+                             'underscore separated ("Genus_specie"), but also higher levels of the tree of life, '
+                             'like order or genus only')
+    from_alignment.add_argument('-m', '--mode', choices=['single', 'all', 'overnight'],
+                        help="The mode of monica's execution: single, all or overnight")
     from_alignment.set_defaults(func=main_from_alignment)
 
     plot_only = subparsers.add_parser('plot_only', help='To generate the plot only, given a table of monica results')
@@ -98,6 +108,7 @@ def main_from_scratch(args):
         params.write(str(args))
 
     n_threads = args.threads
+    alignment_mode = args.alignment_mode
 
     focus_species = args.focus_species
 
@@ -169,7 +180,7 @@ def main_from_scratch(args):
         pass
 
     # Alignment and normalization:
-    alignment = galigner.multi_threaded_aligner(input_folder, indexes, mode='basic', n_threads=n_threads,
+    alignment = galigner.multi_threaded_aligner(input_folder, indexes, mode=alignment_mode, n_threads=n_threads,
                                                 focus_species=args.focus_species, output_folder=output_folder)
 
     raw_alignment_df = galigner.alignment_to_data_frame(alignment, output_folder=output_folder,
@@ -185,7 +196,7 @@ def main_from_scratch(args):
                     show_legend=show_legend, auto_open=auto_open_plot)
 
     if focus_species:
-        focus_alignment = galigner.multi_threaded_aligner(focus_input_folder, focus_indexes, mode='basic', 
+        focus_alignment = galigner.multi_threaded_aligner(focus_input_folder, focus_indexes, mode=alignment_mode,
                                                           n_threads=n_threads, output_folder=focus_output_folder)
         focus_raw_alignment_df = galigner.alignment_to_data_frame(focus_alignment, output_folder=focus_output_folder,
                                                                   filename='raw_monica.dataframe')
@@ -216,29 +227,34 @@ def main_from_alignment(args):
     focus_species = args.focus_species
 
     n_threads = args.threads
+    alignment_mode = args.alignment_mode
 
     auto_open_plot = not args.not_auto_open_plot
     show_legend = not args.not_show_legend
     reads_threshold = args.reads_threshold
 
+    mode = args.mode
+    host = args.host_specie
+    guests = args.guest_species
+
     helpers.initializer(output_folder)
 
-    use_old_indexes = args.use_old_indexes
-    use_old_databases = args.use_old_databases
+    use_prebuilt_databases = args.use_prebuilt_databases
+    use_prebuilt_indexes = args.use_prebuilt_indexes
 
-    if use_old_databases:
+    if use_prebuilt_databases:
         databases = os.path.join(gdatabase.DATABASES_PATH)
 
         indexes = galigner.indexer(databases)
 
-    elif use_old_indexes:
+    elif use_prebuilt_indexes:
         indexes = galigner.indexes_opener()
 
     with open(os.path.join(gfetcher.GENOMES_PATH, 'going_to_enter_alignment'), 'wb'):
         pass
 
     # Alignment and normalization:
-    alignment = galigner.multi_threaded_aligner(input_folder, indexes, mode='basic', n_threads=n_threads,
+    alignment = galigner.multi_threaded_aligner(input_folder, indexes, mode=alignment_mode, n_threads=n_threads,
                                                 focus_species=args.focus_species, output_folder=output_folder)
 
     raw_alignment_df = galigner.alignment_to_data_frame(alignment, output_folder=output_folder,
@@ -250,7 +266,8 @@ def main_from_alignment(args):
 
     # Plotting:
     barplot.plotter(norm_alignment_df, raw_alignment_df, output_folder=output_folder, palette='jet',
-                    reads_threshold=reads_threshold, show_legend=show_legend, auto_open=auto_open_plot)
+                    reads_threshold=reads_threshold, host=host, guests=guests, mode=mode,
+                    show_legend=show_legend, auto_open=auto_open_plot)
 
     if focus_species:
 
@@ -282,7 +299,7 @@ def main_from_alignment(args):
                                                                                  n_threads=n_threads,
                                                                                  databases_path=focus_databases_path)
         focus_indexes = galigner.indexer(focus_databases, indexes_path=os.path.join(galigner.INDEXES_PATH, 'focus'))
-        focus_alignment = galigner.multi_threaded_aligner(focus_input_folder, focus_indexes, mode='basic',
+        focus_alignment = galigner.multi_threaded_aligner(focus_input_folder, focus_indexes, mode=alignment_mode,
                                                           n_threads=n_threads, output_folder=focus_output_folder)
         focus_raw_alignment_df = galigner.alignment_to_data_frame(focus_alignment, output_folder=focus_output_folder,
                                                                   filename='raw_monica.dataframe')
