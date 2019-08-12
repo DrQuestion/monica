@@ -11,7 +11,7 @@ from Bio import SeqIO
 from .fetcher import GENOMES_PATH
 from .database import DATABASES_PATH
 
-BEST_N = 1
+BEST_N = 5
 INDEXES_PATH = os.path.join(os.path.dirname(__file__), 'indexes')
 INDEX_NAME = ['index', '.mmi']
 
@@ -49,14 +49,12 @@ def indexer(databases, indexes_path=INDEXES_PATH):
 
 
 def indexes_opener(indexes_path=INDEXES_PATH):
-    indexes = []
     for file in os.listdir(indexes_path):
         if file.endswith('.mmi'):
             index = mappy.Aligner(fn_idx_in=os.path.join(indexes_path, file))
-            indexes.append(index)
             if not index:
                 raise Exception('Damaged or empty index')
-    return indexes
+            yield index
 
 
 def multi_threaded_aligner(query_folder, indexes, mode=None, overnight=False, n_threads=None, focus_species=[],
@@ -157,6 +155,25 @@ def aligner(sample, sample_name, indexes, mode=None, overnight=False, focus_spec
     return sample_alignment, sample_name
 
 
+def temp_aligner(sample, sample_name, index, mode=None, overnight=False):
+    # mode parameter is for testing only
+    print(f'{sample}, mode is {mode}\t')
+    sample_hits = dict()
+    for seq_record in SeqIO.parse(sample, 'fastq'):
+        hits = []
+        for hit in index.map(str(seq_record.seq)):
+            if hit.is_primary:
+                hits.append((hit.ctg, hit.NM, hit.mlen))
+        if hits:
+            read = seq_record.id
+            if read in sample_hits:
+                for hit in hits:
+                    sample_hits[read].append(hit)
+            else:
+                sample_hits[read] = hits
+    return sample_hits, sample_name
+
+
 def alignment_update(results, output_folder):
     alignment_pickle = os.path.join(output_folder, ALIGNMENT_PICKLE_FILENAME)
     if ALIGNMENT_PICKLE_FILENAME in os.listdir(output_folder):
@@ -207,7 +224,7 @@ def best_hit(hits):
     best = (None, float("inf"))
     distance = 0
     for hit in hits:
-        inverse_identity = float(hit.NM)/hit.mlen
+        inverse_identity = float(hit[1])/hit[2]
         if inverse_identity <= best[1]:
             distance = best[1] - inverse_identity
             best = (hit, inverse_identity)
