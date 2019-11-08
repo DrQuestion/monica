@@ -32,7 +32,7 @@ if __name__ == '__main__':
 
     dbs = aligner.DATABASES_PATH
     # idxs = test_aligner_indexer(dbs)
-    idxs = aligner.indexes_opener(aligner.INDEXES_PATH)
+    idxs = aligner.index_loader(aligner.INDEXES_PATH)
 
     for idx in idxs:
         print(idx)

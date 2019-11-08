@@ -154,7 +154,7 @@ def main_from_scratch(args):
                                                                  databases_path=gdatabase.DATABASES_PATH,
                                                                  keep_genomes=keep_genomes, n_threads=n_threads)
 
-    indexes = galigner.indexer(databases)
+    indexes_paths = galigner.indexer(databases)
 
     # Focus mode indexing building block:
     if focus_species:
@@ -174,13 +174,13 @@ def main_from_scratch(args):
                                                                                  keep_genomes=keep_genomes,
                                                                                  n_threads=n_threads,
                                                                                  databases_path=focus_databases_path)
-        focus_indexes = galigner.indexer(focus_databases, indexes_path=os.path.join(galigner.INDEXES_PATH, 'focus'))
+        focus_indexes_paths = galigner.indexer(focus_databases, indexes_path=os.path.join(galigner.INDEXES_PATH, 'focus'))
 
     with open(os.path.join(gfetcher.GENOMES_PATH, 'going_to_enter_alignment'), 'wb'):
         pass
 
     # Alignment and normalization:
-    alignment = galigner.multi_threaded_aligner(input_folder, indexes, mode=alignment_mode, n_threads=n_threads,
+    alignment = galigner.multi_threaded_aligner(input_folder, indexes_paths, mode=alignment_mode, n_threads=n_threads,
                                                 focus_species=args.focus_species, output_folder=output_folder)
 
     raw_alignment_df = galigner.alignment_to_data_frame(alignment, output_folder=output_folder,
@@ -196,7 +196,7 @@ def main_from_scratch(args):
                     show_legend=show_legend, auto_open=auto_open_plot)
 
     if focus_species:
-        focus_alignment = galigner.multi_threaded_aligner(focus_input_folder, focus_indexes, mode=alignment_mode,
+        focus_alignment = galigner.multi_threaded_aligner(focus_input_folder, focus_indexes_paths, mode=alignment_mode,
                                                           n_threads=n_threads, output_folder=focus_output_folder)
         focus_raw_alignment_df = galigner.alignment_to_data_frame(focus_alignment, output_folder=focus_output_folder,
                                                                   filename='raw_monica.dataframe')
@@ -248,13 +248,13 @@ def main_from_alignment(args):
         indexes = galigner.indexer(databases)
 
     elif use_prebuilt_indexes:
-        indexes = galigner.indexes_opener()
+        indexes_paths = [file for file in os.listdir(galigner.INDEXES_PATH)]
 
     with open(os.path.join(gfetcher.GENOMES_PATH, 'going_to_enter_alignment'), 'wb'):
         pass
 
     # Alignment and normalization:
-    alignment = galigner.multi_threaded_aligner(input_folder, indexes, mode=alignment_mode, n_threads=n_threads,
+    alignment = galigner.multi_threaded_aligner(input_folder, indexes_paths, mode=alignment_mode, n_threads=n_threads,
                                                 focus_species=args.focus_species, output_folder=output_folder)
 
     raw_alignment_df = galigner.alignment_to_data_frame(alignment, output_folder=output_folder,
