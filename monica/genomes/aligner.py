@@ -4,9 +4,11 @@ import pickle
 from multiprocessing.dummy import Pool as ThreadPool
 from collections import Counter
 
+
 import pandas as pd
 import mappy
 from Bio import SeqIO
+
 
 from .fetcher import GENOMES_PATH
 from .database import DATABASES_PATH
@@ -51,6 +53,7 @@ def indexer(databases, indexes_path=INDEXES_PATH):
 
 def index_loader(index_file):
     if index_file.endswith('.mmi'):
+        print(f'aligning on {index_file}')
         index = mappy.Aligner(fn_idx_in=index_file)
         if not index:
             raise Exception('Damaged or empty index')
@@ -84,15 +87,16 @@ def multi_threaded_aligner(query_folder, indexes_paths, mode=None, overnight=Fal
 
     for i in range(len(indexes_paths) - 1):
         index = index_loader(indexes_paths[i])
-        pool.starmap(aligner, zip(samples, samples_name, itertools.repeat(index), itertools.repeat(mode)))
+        pool.starmap(aligner, zip(samples, samples_name, itertools.repeat(index), itertools.repeat(mode),
+                                  itertools.repeat(hits_folder)))
 
     index = index_loader(indexes_paths[-1])
 
     results = pool.starmap(aligner, zip(samples, samples_name, itertools.repeat(index), itertools.repeat(mode),
-                                        itertools.repeat(overnight), itertools.repeat(focus_species),
-                                        itertools.repeat(mapped_folder), itertools.repeat(unmapped_folder),
-                                        itertools.repeat(ambiguous_folder), itertools.repeat(focus_folder),
-                                        itertools.repeat(True), itertools.repeat(hits_folder)))
+                                        itertools.repeat(hits_folder), itertools.repeat(overnight),
+                                        itertools.repeat(focus_species), itertools.repeat(mapped_folder),
+                                        itertools.repeat(unmapped_folder), itertools.repeat(ambiguous_folder),
+                                        itertools.repeat(focus_folder), itertools.repeat(True)))
 
     alignment = alignment_update(results, output_folder)
 
@@ -164,8 +168,9 @@ def multi_threaded_aligner(query_folder, indexes_paths, mode=None, overnight=Fal
 #     return sample_alignment, sample_name
 
 
-def aligner(sample, sample_name, index, mode=None, overnight=False, focus_species=[], mapped_folder=None,
-                 unmapped_folder=None, ambiguous_folder=None, focus_folder=None, last_index=False, hits_folder=None):
+def aligner(sample, sample_name, index, mode=None, hits_folder=None, overnight=False, focus_species=[],
+            mapped_folder=None, unmapped_folder=None, ambiguous_folder=None, focus_folder=None, last_index=False,
+            mapping_quality=10):
     # mode parameter is for testing only
     print(f'{sample}, mode is {mode}\t')
     sample_hits_pickle_filename = sample_name + '_hits.pkl'
@@ -178,7 +183,7 @@ def aligner(sample, sample_name, index, mode=None, overnight=False, focus_specie
         for seq_record in SeqIO.parse(sample, 'fastq'):
             hits = []
             for hit in index.map(str(seq_record.seq)):
-                if hit.is_primary:
+                if hit.is_primary and hit.mapq >= mapping_quality:
                     hits.append((hit.ctg, hit.NM, hit.mlen))
             if hits:
                 read = seq_record.id
@@ -187,6 +192,7 @@ def aligner(sample, sample_name, index, mode=None, overnight=False, focus_specie
                         sample_hits[read].append(hit)
                 else:
                     sample_hits[read] = hits
+        print(sample_hits)
         pickle.dump(sample_hits, open(os.path.join(hits_folder, sample_hits_pickle_filename), 'wb'))
 
     else:
@@ -200,7 +206,7 @@ def aligner(sample, sample_name, index, mode=None, overnight=False, focus_specie
                 hits = []
                 read = seq_record.id
                 for hit in index.map(str(seq_record.seq)):
-                    if hit.is_primary:
+                    if hit.is_primary and hit.mapq >= mapping_quality:
                         hits.append((hit.ctg, hit.NM, hit.mlen))
                 if hits:
                     if read in sample_hits:
@@ -215,6 +221,7 @@ def aligner(sample, sample_name, index, mode=None, overnight=False, focus_specie
                         best = hits[0]
                     else:
                         best = best_hit(hits)
+                        print(best)
                         if not best:
                             SeqIO.write(seq_record, ambiguous, 'fastq')
                             continue
@@ -252,8 +259,10 @@ def aligner(sample, sample_name, index, mode=None, overnight=False, focus_specie
                     SeqIO.write(seq_record, unmapped, 'fastq')
 
         if sample_hits_pickle_filename in os.listdir(hits_folder):
-            stored_hits = pickle.load(open(os.path.join(hits_folder, sample_hits_pickle_filename)))
+            stored_hits = pickle.load(open(os.path.join(hits_folder, sample_hits_pickle_filename), 'rb'))
+            print('stored hits are {}'.format(stored_hits))
             stored_hits.update(sample_hits)
+            print('updated stored hits are {}'.format(stored_hits))
             pickle.dump(stored_hits, open(os.path.join(hits_folder, sample_hits_pickle_filename), 'wb'))
         else:
             pickle.dump(sample_hits, open(os.path.join(hits_folder, sample_hits_pickle_filename), 'wb'))
@@ -289,7 +298,7 @@ def alignment_update(results, output_folder):
     return alignment
 
 
-def normalizer(alignment, genomes_length=None, databases_path=None):
+def normalizer(alignment, genomes_length=None, databases_path=DATABASES_PATH):
     if not genomes_length:
         genomes_length = pickle.load(open(os.path.join(databases_path, 'current_genomes_length.pkl'), 'rb'))
     for sample in alignment.keys():

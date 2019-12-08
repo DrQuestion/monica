@@ -38,7 +38,7 @@ def main():
     parser.add_argument('-im', '--indexing_memory', type=helpers.human_readable,
                               help='The maximum memory the user wishes to be used during indexing. '
                                    'Must end with a unit of measure among B|K|M|G|T.'
-                                   'Default is half of total memory')
+                                   'Default is fourth of total memory')
     parser.add_argument('--not_auto_open_plot', action='store_true',
                         help='If wishing NOT to plot the results at the and of the analysis')
     parser.add_argument('--not_show_legend', action='store_true',
