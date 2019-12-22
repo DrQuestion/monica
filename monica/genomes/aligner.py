@@ -60,8 +60,8 @@ def index_loader(index_file):
         return index
 
 
-def multi_threaded_aligner(query_folder, indexes_paths, mode=None, overnight=False, n_threads=None, focus_species=[],
-                           output_folder=None, mapped_files_folder=MAPPED_FILES_FOLDER,
+def multi_threaded_aligner(query_folder, indexes_paths, mode=None, mapping_quality=60, overnight=False, n_threads=None,
+                           focus_species=[], output_folder=None, mapped_files_folder=MAPPED_FILES_FOLDER,
                            unmapped_files_folder=UNMAPPED_FILES_FOLDER, ambiguous_files_folder=AMBIGUOUS_FILES_FOLDER,
                            hits_files_folder=HITS_FILES_FOLDER, focus_file_folder=FOCUS_FILES_FOLDER):
 
@@ -88,15 +88,16 @@ def multi_threaded_aligner(query_folder, indexes_paths, mode=None, overnight=Fal
     for i in range(len(indexes_paths) - 1):
         index = index_loader(indexes_paths[i])
         pool.starmap(aligner, zip(samples, samples_name, itertools.repeat(index), itertools.repeat(mode),
-                                  itertools.repeat(hits_folder)))
+                                  itertools.repeat(hits_folder), itertools.repeat(mapping_quality)))
 
     index = index_loader(indexes_paths[-1])
 
     results = pool.starmap(aligner, zip(samples, samples_name, itertools.repeat(index), itertools.repeat(mode),
-                                        itertools.repeat(hits_folder), itertools.repeat(overnight),
-                                        itertools.repeat(focus_species), itertools.repeat(mapped_folder),
-                                        itertools.repeat(unmapped_folder), itertools.repeat(ambiguous_folder),
-                                        itertools.repeat(focus_folder), itertools.repeat(True)))
+                                        itertools.repeat(hits_folder), itertools.repeat(mapping_quality),
+                                        itertools.repeat(overnight), itertools.repeat(focus_species),
+                                        itertools.repeat(mapped_folder), itertools.repeat(unmapped_folder),
+                                        itertools.repeat(ambiguous_folder), itertools.repeat(focus_folder),
+                                        itertools.repeat(True)))
 
     alignment = alignment_update(results, output_folder)
 
@@ -168,9 +169,9 @@ def multi_threaded_aligner(query_folder, indexes_paths, mode=None, overnight=Fal
 #     return sample_alignment, sample_name
 
 
-def aligner(sample, sample_name, index, mode=None, hits_folder=None, overnight=False, focus_species=[],
-            mapped_folder=None, unmapped_folder=None, ambiguous_folder=None, focus_folder=None, last_index=False,
-            mapping_quality=10):
+def aligner(sample, sample_name, index, mode=None, hits_folder=None, mapping_quality=None, overnight=False,
+            focus_species=[], mapped_folder=None, unmapped_folder=None, ambiguous_folder=None, focus_folder=None,
+            last_index=False):
     # mode parameter is for testing only
     print(f'{sample}, mode is {mode}\t')
     sample_hits_pickle_filename = sample_name + '_hits.pkl'
