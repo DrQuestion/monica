@@ -110,7 +110,10 @@ def main_from_scratch(args):
     n_threads = args.threads
     alignment_mode = args.alignment_mode
 
-    focus_species = args.focus_species
+    if not args.focus_species:
+        focus_species = []
+    else:
+        focus_species = args.focus_species
 
     auto_open_plot = not args.not_auto_open_plot
     show_legend = not args.not_show_legend
@@ -224,7 +227,10 @@ def main_from_alignment(args):
     with open(os.path.join(output_folder, 'monica.params'), 'w') as params:
         params.write(str(args))
 
-    focus_species = args.focus_species
+    if not args.focus_species:
+        focus_species = []
+    else:
+        focus_species = args.focus_species
 
     n_threads = args.threads
     alignment_mode = args.alignment_mode
