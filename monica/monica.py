@@ -184,7 +184,7 @@ def main_from_scratch(args):
 
     # Alignment and normalization:
     alignment = galigner.multi_threaded_aligner(input_folder, indexes_paths, mode=alignment_mode, n_threads=n_threads,
-                                                focus_species=args.focus_species, output_folder=output_folder)
+                                                focus_species=focus_species, output_folder=output_folder)
 
     raw_alignment_df = galigner.alignment_to_data_frame(alignment, output_folder=output_folder,
                                                         filename='raw_monica.dataframe')
@@ -207,7 +207,7 @@ def main_from_scratch(args):
         focus_norm_alignment_df = galigner.alignment_to_data_frame(focus_norm_alignment, 
                                                                    output_folder=focus_output_folder)
         barplot.plotter(focus_norm_alignment_df, focus_raw_alignment_df, output_folder=focus_output_folder, 
-                        palette='jet', reads_threshold=0, guests=args.focus_species, mode='focus',
+                        palette='jet', reads_threshold=0, guests=focus_species, mode='focus',
                         show_legend=show_legend, auto_open=auto_open_plot)
         
         
@@ -261,7 +261,7 @@ def main_from_alignment(args):
 
     # Alignment and normalization:
     alignment = galigner.multi_threaded_aligner(input_folder, indexes_paths, mode=alignment_mode, n_threads=n_threads,
-                                                focus_species=args.focus_species, output_folder=output_folder)
+                                                focus_species=focus_species, output_folder=output_folder)
 
     raw_alignment_df = galigner.alignment_to_data_frame(alignment, output_folder=output_folder,
                                                         filename='raw_monica.dataframe')
@@ -313,7 +313,7 @@ def main_from_alignment(args):
         focus_norm_alignment_df = galigner.alignment_to_data_frame(focus_norm_alignment,
                                                                    output_folder=focus_output_folder)
         barplot.plotter(focus_norm_alignment_df, focus_raw_alignment_df, output_folder=focus_output_folder,
-                        palette='jet', reads_threshold=0, guests=args.focus_species, mode='focus',
+                        palette='jet', reads_threshold=0, guests=focus_species, mode='focus',
                         show_legend=show_legend, auto_open=auto_open_plot)
 
 
