@@ -13,7 +13,7 @@ from Bio import SeqIO
 from .fetcher import GENOMES_PATH
 from .database import DATABASES_PATH
 
-BEST_N = 5
+BEST_N = 15
 INDEXES_PATH = os.path.join(os.path.dirname(__file__), 'indexes')
 INDEX_NAME = ['index', '.mmi']
 
@@ -193,7 +193,6 @@ def aligner(sample, sample_name, index, mode=None, hits_folder=None, mapping_qua
                         sample_hits[read].append(hit)
                 else:
                     sample_hits[read] = hits
-        print(sample_hits)
         pickle.dump(sample_hits, open(os.path.join(hits_folder, sample_hits_pickle_filename), 'wb'))
 
     else:
