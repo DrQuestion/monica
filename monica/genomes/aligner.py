@@ -13,8 +13,11 @@ from Bio import SeqIO
 from .fetcher import GENOMES_PATH
 from .database import DATABASES_PATH
 
+with open(os.path.join(os.path.join(os.path.expanduser('~'), '.monica'), '.root'), 'r') as root:
+    MONICA_ROOT = root.readline()
+
 BEST_N = 15
-INDEXES_PATH = os.path.join(os.path.dirname(__file__), 'indexes')
+INDEXES_PATH = os.path.join(MONICA_ROOT, 'indexes')
 INDEX_NAME = ['index', '.mmi']
 
 ALIGNMENT_PICKLE_FILENAME = 'alignment.pkl'

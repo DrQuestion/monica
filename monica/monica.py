@@ -3,8 +3,18 @@
 # TODO log system when launching monica from scratch to save all parameters, to keep host, guests and mode
 
 import os
-import argparse
 
+if os.path.exists(os.path.join(os.path.expanduser('~'), '.monica')):
+    with open(os.path.join(os.path.join(os.path.expanduser('~'), '.monica'), '.root'), 'r') as root:
+        MONICA_ROOT = root.readline()
+        print(f'root is {MONICA_ROOT}')
+else:
+    os.mkdir(os.path.join(os.path.expanduser('~'), '.monica'))
+    with open(os.path.join(os.path.join(os.path.expanduser('~'), '.monica'), '.root'), 'w') as root:
+        root.write(os.path.join(os.path.expanduser('~'), '.monica'))
+    MONICA_ROOT = os.path.join(os.path.expanduser('~'), '.monica')
+
+import argparse
 import psutil
 import pandas as pd
 
@@ -35,6 +45,7 @@ def main():
                                    'Default is {}'.format(gfetcher.OLDIES_PATH))
     parser.add_argument('-k', '--keep_genomes', choices=['yes', 'no'], default='yes',
                               help='Choose if genomes are to be kept in -g. Default is "yes"')
+    parser.add_argument('-i', '--index_folder', help='folder where indexes must be written/read')
     parser.add_argument('-im', '--indexing_memory', type=helpers.human_readable,
                               help='The maximum memory the user wishes to be used during indexing. '
                                    'Must end with a unit of measure among B|K|M|G|T.'
@@ -43,7 +54,7 @@ def main():
                         help='If wishing NOT to plot the results at the and of the analysis')
     parser.add_argument('--not_show_legend', action='store_true',
                         help='If wishing NOT to show legend')
-    parser.add_argument('-r', '--reads_threshold', default=0,
+    parser.add_argument('-R', '--reads_threshold', default=0,
                         help='Threshold of reads for a specie in each sample that will be displayed in the plot. '
                              'If lower in all samples species not displayed. '
                              'Default is {}'.format(barplot.READS_THRESHOLD))
@@ -66,6 +77,22 @@ def main():
                               help="The mode of monica's execution: single, all or overnight")
     from_scratch.set_defaults(func=main_from_scratch)
 
+    build_index = subparsers.add_parser('build_index', help='To build an index a priori')
+    build_index.add_argument('-H', '--host_specie',
+                              help='Host species where samples come from, underscore separated ("Genus_specie")')
+    build_index.add_argument('-G', '--guest_species', nargs='*',
+                              help='Guest species hypothesized to be present in the sample, '
+                                   'underscore separated ("Genus_specie"), but also higher levels of the tree of life, '
+                                   'like order or genus only')
+    build_index.add_argument('-F', '--focus_species', nargs='*',
+                              help='Species of interest among the whole guests selected, focus analysis on their subspecies')
+    build_index.add_argument('--format_genomes',
+                              help='Folder, call it together with -m and -H/-G, when assembly-formatted genomes '
+                                   'are present in it without being formatted for monica')
+    build_index.add_argument('-m', '--mode', choices=['single', 'all', 'overnight'],
+                              help="The mode of monica's execution: single, all or overnight")
+    build_index.set_defaults(func=main_build_index)
+
     from_alignment = subparsers.add_parser('from_alignment', help='To run monica given an already built index/database')
     from_alignment.add_argument('-F', '--focus_species', nargs='*',
                         help='Species of interest among the whole guests selected, focus analysis on their subspecies')
@@ -86,8 +113,15 @@ def main():
     plot_only.add_argument('-d', '--data_frame', help='The monica result data frame to generate the plot from')
     plot_only.set_defaults(func=main_from_plotting)
 
+    initialize = subparsers.add_parser('initialize', help='To control monica root folder where heavy files will be '
+                                                          'downloaded')
+    initialize.add_argument('-r', '--monica_root_folder', default=MONICA_ROOT,
+                        help='Path where ".monica" root folder will be created')
+    initialize.set_defaults(func=main_initialize)
+
     args = parser.parse_args()
     args.func(args)
+
     return args
 
 
@@ -104,7 +138,8 @@ def main_from_scratch(args):
         output_folder = os.path.join(input_folder, 'monica_output')
     if not os.path.exists(output_folder):
         os.mkdir(output_folder)
-    with open(os.path.join(output_folder, 'monica.params'), 'w') as params:
+
+    with open(os.path.join(MONICA_ROOT, 'monica.params'), 'w') as params:
         params.write(str(args))
 
     n_threads = args.threads
@@ -224,7 +259,8 @@ def main_from_alignment(args):
         output_folder = os.path.join(input_folder, 'monica_output')
     if not os.path.exists(output_folder):
         os.mkdir(output_folder)
-    with open(os.path.join(output_folder, 'monica.params'), 'w') as params:
+
+    with open(os.path.join(MONICA_ROOT, 'monica.params'), 'w') as params:
         params.write(str(args))
 
     if not args.focus_species:
@@ -317,8 +353,80 @@ def main_from_alignment(args):
                         show_legend=show_legend, auto_open=auto_open_plot)
 
 
-def main_indexes_building_only():
-    pass
+def main_build_index(args):
+
+    # Input handling:
+    with open(os.path.join(MONICA_ROOT, 'monica.params'), 'w') as params:
+        params.write(str(args))
+
+    n_threads = args.threads
+
+    if not args.focus_species:
+        focus_species = []
+    else:
+        focus_species = args.focus_species
+
+    if args.indexing_memory:
+        indexing_memory = args.indexing_memory
+    else:
+        indexing_memory = psutil.virtual_memory().total / 4
+
+    max_chunk_size = indexing_memory / 16
+
+    mode = args.mode
+    host = args.host_specie
+    guests = args.guest_species
+
+    if guests:
+        guests = map(lambda guest: ' '.join(guest.split(sep='_')), guests)
+    if args.keep_genomes == 'yes':
+        keep_genomes = True
+    else:
+        keep_genomes = False
+    oldies_path = args.genomes_folder
+    format_genomes = args.format_genomes
+
+    # Genomes ftp selection and download:
+    ftp_table = gfetcher.ftp_selector(mode=mode, species=guests)
+
+    if host:
+        host = ' '.join(host.split(sep='_'))
+        host_ftp_table = gfetcher.ftp_selector(mode='single', species=[host])
+        ftp_table = ftp_table.append(host_ftp_table, ignore_index=True)
+
+    genomes = gfetcher.fetcher(ftp_table, oldies_path=oldies_path, keep_genomes=keep_genomes,
+                               format_genomes=format_genomes)
+
+    # Database building and indexing:
+    databases, genomes_length = gdatabase.multi_threaded_builder(genomes=genomes, max_chunk_size=max_chunk_size,
+                                                                 databases_path=gdatabase.DATABASES_PATH,
+                                                                 keep_genomes=keep_genomes, n_threads=n_threads)
+
+    indexes_paths = galigner.indexer(databases)
+
+    # Focus mode indexing building block:
+    if focus_species:
+        focus_input_folder = os.path.join(input_folder, 'focus')
+        focus_output_folder = os.path.join(output_folder, 'focus')
+        if not os.path.exists(focus_output_folder):
+            os.mkdir(focus_output_folder)
+
+        helpers.initializer(focus_output_folder)
+
+        focus_databases_path = os.path.join(gdatabase.DATABASES_PATH, 'focus')
+        focus_species = map(lambda specie: ' '.join(specie.split(sep='_')), focus_species)
+        focus_ftp_table = gfetcher.ftp_selector(mode='focus', species=focus_species)
+        focus_genomes = gfetcher.focus_fetcher(focus_ftp_table, oldies_path=oldies_path, keep_genomes=keep_genomes)
+        focus_databases, focus_genomes_length = gdatabase.multi_threaded_builder(genomes=focus_genomes,
+                                                                                 max_chunk_size=max_chunk_size,
+                                                                                 keep_genomes=keep_genomes,
+                                                                                 n_threads=n_threads,
+                                                                                 databases_path=focus_databases_path)
+        focus_indexes_paths = galigner.indexer(focus_databases,
+                                               indexes_path=os.path.join(galigner.INDEXES_PATH, 'focus'))
+
+    with open(os.path.join(gfetcher.GENOMES_PATH, 'going_to_enter_alignment'), 'wb'):
+        pass
 
 
 def main_from_plotting(args):
@@ -349,6 +457,18 @@ def main_from_plotting(args):
         # Plotting
         barplot.plotter(n_alignment_df, r_alignment_df, output_folder=output_folder, palette='jet',
                         reads_threshold=reads_threshold, show_legend=show_legend, auto_open=auto_open_plot)
+
+
+def main_initialize(args):
+
+    # To initialize monica in a given root
+    if args.monica_root_folder != MONICA_ROOT:
+        monica_root = os.path.join(args.monica_root_folder, '.monica')
+        with open(os.path.join(MONICA_ROOT, '.root'), 'w') as root:
+            root.write(monica_root)
+        if not os.path.exists(monica_root):
+            os.mkdir(monica_root)
+        print(f'monica root moved to {monica_root}')
 
 
 if __name__ == '__main__':

@@ -4,8 +4,10 @@ import pandas as pd
 import wget
 import time
 
+with open(os.path.join(os.path.join(os.path.expanduser('~'), '.monica'), '.root'), 'r') as root:
+    MONICA_ROOT = root.readline()
 
-TABLES_PATH = os.path.join(os.path.dirname(__file__), 'tables')
+TABLES_PATH = os.path.join(MONICA_ROOT, 'tables')
 REFSEQ_SUMMARY_FTP = 'ftp://ftp.ncbi.nlm.nih.gov/genomes/refseq/assembly_summary_refseq.txt'
 GENBANK_SUMMARY_FTP = 'ftp://ftp.ncbi.nlm.nih.gov/genomes/genbank/assembly_summary_genbank.txt'
 LOG_FILE = os.path.join(TABLES_PATH, 'log')

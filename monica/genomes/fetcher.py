@@ -12,7 +12,10 @@ from . import tables
 PARENTS = ['Fungi', 'Oomycota', 'Bacteria', 'Archaea', 'Viruses', 'Viroids',
            'Nematodes', 'Rhizaria', 'Alveolata', 'Heterokonta']
 
-GENOMES_PATH = os.path.join(os.path.dirname(__file__), 'genomes')
+with open(os.path.join(os.path.join(os.path.expanduser('~'), '.monica'), '.root'), 'r') as root:
+    MONICA_ROOT = root.readline()
+
+GENOMES_PATH = os.path.join(MONICA_ROOT, 'genomes')
 OLDIES_PATH = os.path.join(GENOMES_PATH, 'oldies')
 EXCEPTIONS_PATH = os.path.join(GENOMES_PATH, 'exceptions')
 
@@ -23,7 +26,7 @@ NCBI_TAXA_DAYS_THRESHOLD = 14
 def descendants_taxid_finder(species=[], focus=False):
     ncbi = NCBITaxa()
     if not ncbi_taxa_updated():
-        with open(os.path.join(os.path.dirname(__file__), NCBI_TAXA_UPDATE_LOG), 'w+') as log:
+        with open(os.path.join(MONICA_ROOT, NCBI_TAXA_UPDATE_LOG), 'w+') as log:
             log.write(str(dt.date.today()))
         ncbi.update_taxonomy_database()
     descendants = []
@@ -44,8 +47,8 @@ def ftp_selector(mode=None, species=[]):
     ftp_path_list = []
 
     if mode == 'overnight':
-        print ('Activated overnight mode')
-        genera=[]
+        print('Activated overnight mode')
+        genera = []
         taxids=descendants_taxid_finder(PARENTS)
         table = tables.importer(which='refseq')
         merged_table = table.merge(taxids, on='taxid')
@@ -64,22 +67,22 @@ def ftp_selector(mode=None, species=[]):
     elif mode == 'all':
         print('Activated all mode')
         taxids = descendants_taxid_finder(species)
-        table=tables.importer(which='genbank')
-        merged_table=table.merge(taxids, on='taxid')
+        table = tables.importer(which='genbank')
+        merged_table = table.merge(taxids, on='taxid')
         for name in merged_table.loc[:, 'organism_name']:
             species_name.append(
-                '_'.join([name.split(sep=' ')[0], name.split(sep=' ')[1]]))
+                '_'.join(name.split(sep=' ')))
         merged_table['species_name'] = species_name
 
     elif mode == 'single':
         print('Activated single mode')
-        taxids=descendants_taxid_finder(species)
-        table=tables.importer(which='refseq')
+        taxids = descendants_taxid_finder(species)
+        table = tables.importer(which='refseq')
         merged_table = table.merge(taxids, on='taxid')
         for name in merged_table.loc[:, 'organism_name']:
             species_name.append(
                    '_'.join([name.split(sep=' ')[0], name.split(sep=' ')[1]]))
-        merged_table['species_name']=species_name
+        merged_table['species_name'] = species_name
         merged_table = merged_table.drop_duplicates(subset=['species_name'], keep='last')
 
     elif mode == 'focus':
@@ -263,9 +266,9 @@ def focus_fetcher(table, oldies_path=OLDIES_PATH, keep_genomes=None):
 
 
 def ncbi_taxa_updated():
-    if NCBI_TAXA_UPDATE_LOG not in os.listdir(os.path.dirname(__file__)):
+    if NCBI_TAXA_UPDATE_LOG not in os.listdir(MONICA_ROOT):
         return 0
-    with open(os.path.join(os.path.dirname(__file__), NCBI_TAXA_UPDATE_LOG), 'r') as log:
+    with open(os.path.join(MONICA_ROOT, NCBI_TAXA_UPDATE_LOG), 'r') as log:
         date = log.read()
     date = dt.datetime.strptime(date, '%Y-%m-%d')
     delta = dt.datetime.now() - date
