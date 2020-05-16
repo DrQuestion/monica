@@ -80,8 +80,12 @@ def ftp_selector(mode=None, species=[]):
         table = tables.importer(which='refseq')
         merged_table = table.merge(taxids, on='taxid')
         for name in merged_table.loc[:, 'organism_name']:
-            species_name.append(
-                   '_'.join([name.split(sep=' ')[0], name.split(sep=' ')[1]]))
+            if not name.split(sep=' ')[1] == 'sp.':
+                species_name.append(
+                    '_'.join(name.split(sep=' ')[0:2]))
+            else:
+                species_name.append(
+                    ''.join(('_'.join(name.split(sep=' ')[0:2]), name.split(sep=' ')[2])))
         merged_table['species_name'] = species_name
         merged_table = merged_table.drop_duplicates(subset=['species_name'], keep='last')
 
@@ -184,7 +188,7 @@ def fetcher(table, oldies_path=OLDIES_PATH, keep_genomes=None, format_genomes=No
                     new_filename = os.path.join(GENOMES_PATH, base_new_filename)
                 try:
                     wget.download(ftp, out=new_filename)
-                    new_genomes.append(base_new_filename.split(sep='.')[0])
+                    new_genomes.append('.'.join(base_new_filename.split(sep='.')[:-3]))
                     genomes.append((new_filename, new_header_components))
                 except FileNotFoundError:
                     print('{} failed download'.format(ftp))
@@ -215,7 +219,7 @@ def fetcher(table, oldies_path=OLDIES_PATH, keep_genomes=None, format_genomes=No
                         new_filename = os.path.join(GENOMES_PATH, base_new_filename)
                     try:
                         wget.download(ftp, out=new_filename)
-                        new_genomes.append(base_new_filename.split(sep='.')[0])
+                        new_genomes.append('.'.join(base_new_filename.split(sep='.')[:-3]))
                         genomes.append((new_filename, new_header_components))
                     except FileNotFoundError:
                         print('{} failed download'.format(ftp))
@@ -280,8 +284,8 @@ def ncbi_taxa_updated():
 def oldies_cleaner(new_genomes, old, oldies_path):
     # When a genome with same accession prefix but different version is downloaded, the old version is deleted
     # from the current database
-    old_no_version = list(map(lambda genome: genome.split(sep='.')[0], old))
+    old_no_version = list(map(lambda genome: ".".join(genome.split(sep='.')[:-3]), old))
     for genome, genome_no_version in zip(old, old_no_version):
         if genome_no_version in new_genomes:
             os.remove(os.path.join(oldies_path, genome))
-            print(f'Removing {genome}, new version found')
+            print(f'\nRemoving {genome}, new version found')

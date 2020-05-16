@@ -13,6 +13,10 @@ else:
     with open(os.path.join(os.path.join(os.path.expanduser('~'), '.monica'), '.root'), 'w') as root:
         root.write(os.path.join(os.path.expanduser('~'), '.monica'))
     MONICA_ROOT = os.path.join(os.path.expanduser('~'), '.monica')
+os.chdir(MONICA_ROOT)
+
+import warnings
+warnings.filterwarnings("ignore", category=UserWarning)
 
 import argparse
 import psutil
@@ -396,23 +400,22 @@ def main_build_index(args):
 
     genomes = gfetcher.fetcher(ftp_table, oldies_path=oldies_path, keep_genomes=keep_genomes,
                                format_genomes=format_genomes)
+    # if host:
+    #     host_genome = gfetcher.fetcher(host_ftp_table, oldies_path=oldies_path, keep_genomes=keep_genomes,
+    #                                    format_genomes=format_genomes)
 
     # Database building and indexing:
     databases, genomes_length = gdatabase.multi_threaded_builder(genomes=genomes, max_chunk_size=max_chunk_size,
                                                                  databases_path=gdatabase.DATABASES_PATH,
                                                                  keep_genomes=keep_genomes, n_threads=n_threads)
 
+    # if host:
+    #     pass
+
     indexes_paths = galigner.indexer(databases)
 
     # Focus mode indexing building block:
     if focus_species:
-        focus_input_folder = os.path.join(input_folder, 'focus')
-        focus_output_folder = os.path.join(output_folder, 'focus')
-        if not os.path.exists(focus_output_folder):
-            os.mkdir(focus_output_folder)
-
-        helpers.initializer(focus_output_folder)
-
         focus_databases_path = os.path.join(gdatabase.DATABASES_PATH, 'focus')
         focus_species = map(lambda specie: ' '.join(specie.split(sep='_')), focus_species)
         focus_ftp_table = gfetcher.ftp_selector(mode='focus', species=focus_species)
@@ -424,9 +427,6 @@ def main_build_index(args):
                                                                                  databases_path=focus_databases_path)
         focus_indexes_paths = galigner.indexer(focus_databases,
                                                indexes_path=os.path.join(galigner.INDEXES_PATH, 'focus'))
-
-    with open(os.path.join(gfetcher.GENOMES_PATH, 'going_to_enter_alignment'), 'wb'):
-        pass
 
 
 def main_from_plotting(args):
