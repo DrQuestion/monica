@@ -285,6 +285,7 @@ def main_from_alignment(args):
 
     helpers.initializer(output_folder)
 
+    index_folder = args.index_folder
     use_prebuilt_databases = args.use_prebuilt_databases
     use_prebuilt_indexes = args.use_prebuilt_indexes
 
@@ -294,7 +295,10 @@ def main_from_alignment(args):
         indexes = galigner.indexer(databases)
 
     elif use_prebuilt_indexes:
-        indexes_paths = [file for file in os.listdir(galigner.INDEXES_PATH)]
+        indexes_paths = [os.path.join(galigner.INDEXES_PATH, file) for file in os.listdir(galigner.INDEXES_PATH) if file.endswith('.mmi')]
+
+    elif index_folder:
+        indexes_paths = [os.path.join(index_folder, file) for file in os.listdir(index_folder) if file.endswith('.mmi')]
 
     with open(os.path.join(gfetcher.GENOMES_PATH, 'going_to_enter_alignment'), 'wb'):
         pass
