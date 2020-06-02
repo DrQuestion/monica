@@ -8,7 +8,6 @@ from ete3 import NCBITaxa
 
 from . import tables
 
-
 PARENTS = ['Fungi', 'Oomycota', 'Bacteria', 'Archaea', 'Viruses', 'Viroids',
            'Nematodes', 'Rhizaria', 'Alveolata', 'Heterokonta']
 
@@ -49,15 +48,15 @@ def ftp_selector(mode=None, species=[]):
     if mode == 'overnight':
         print('Activated overnight mode')
         genera = []
-        taxids=descendants_taxid_finder(PARENTS)
+        taxids = descendants_taxid_finder(PARENTS)
         table = tables.importer(which='refseq')
         merged_table = table.merge(taxids, on='taxid')
         for name in merged_table.loc[:, 'organism_name']:
-            splitted_name=name.split(sep=' ')
+            splitted_name = name.split(sep=' ')
             genera.append(splitted_name[0])
-            species_name.append('_'.join([splitted_name[0],splitted_name[1]]))
+            species_name.append('_'.join([splitted_name[0], splitted_name[1]]))
         merged_table['genera'] = genera
-        merged_table['species_name']=species_name
+        merged_table['species_name'] = species_name
         merged_table = merged_table.drop_duplicates(subset=['genera'], keep='last')
 
     elif not species:
@@ -99,7 +98,7 @@ def ftp_selector(mode=None, species=[]):
             if not isinstance(strain, float):
                 strain = strain.split(sep='=')[1]
                 if not name.endswith(strain):
-                    name = name.replace('.', '')+' '+strain
+                    name = name.replace('.', '') + ' ' + strain
                 else:
                     name = name.replace(strain, '')
                     name = name.replace('.', '') + strain
@@ -111,7 +110,7 @@ def ftp_selector(mode=None, species=[]):
 
     # modify ftps to obtain genomic dna file
     for ftp in merged_table.loc[:, 'ftp_path']:
-        filename = ftp.split(sep='/')[-1]+'_genomic.fna.gz'
+        filename = ftp.split(sep='/')[-1] + '_genomic.fna.gz'
         ftp_path_list.append('/'.join([ftp, filename]))
     merged_table.loc[:, 'ftp_path'] = ftp_path_list
 
@@ -132,6 +131,7 @@ def fetcher(table, oldies_path=OLDIES_PATH, keep_genomes=None, format_genomes=No
         os.mkdir(EXCEPTIONS_PATH)
 
     old = os.listdir(oldies_path)
+    updated = 0
 
     print('Started genomes retrieval')
     if not old and not format_genomes:
@@ -139,14 +139,15 @@ def fetcher(table, oldies_path=OLDIES_PATH, keep_genomes=None, format_genomes=No
             ftp = row[1]['ftp_path']
             new_header_components = [row[1][-1], row[1]['# assembly_accession'].split(sep='_')[-1]]
             if keep_genomes:
-                new_filename = os.path.join(oldies_path, '_'.join(new_header_components)+'.fna.gz')
+                new_filename = os.path.join(oldies_path, '_'.join(new_header_components) + '.fna.gz')
             else:
-                new_filename = os.path.join(GENOMES_PATH, '_'.join(new_header_components)+'.fna.gz')
+                new_filename = os.path.join(GENOMES_PATH, '_'.join(new_header_components) + '.fna.gz')
             try:
                 wget.download(ftp, out=new_filename)
                 genomes.append((new_filename, new_header_components))
             except FileNotFoundError:
                 print('{} failed download'.format(ftp))
+        updated = 1
 
     elif not old and format_genomes:
         genomes_to_format = [file for file in os.listdir(format_genomes) if file.endswith('fna.gz')]
@@ -160,6 +161,7 @@ def fetcher(table, oldies_path=OLDIES_PATH, keep_genomes=None, format_genomes=No
                 genomes.append((filename, new_header_components))
 
             else:
+                updated = 1
                 if keep_genomes:
                     new_filename = os.path.join(oldies_path, '_'.join(new_header_components) + '.fna.gz')
                 else:
@@ -172,16 +174,17 @@ def fetcher(table, oldies_path=OLDIES_PATH, keep_genomes=None, format_genomes=No
 
     elif old and not format_genomes:
         for row in table.iterrows():
-            ftp=row[1]['ftp_path']
-            new_header_components=[row[1][-1], row[1]['# assembly_accession'].split(sep='_')[-1]]
-            base_new_filename='_'.join(new_header_components)+'.fna.gz'
+            ftp = row[1]['ftp_path']
+            new_header_components = [row[1][-1], row[1]['# assembly_accession'].split(sep='_')[-1]]
+            base_new_filename = '_'.join(new_header_components) + '.fna.gz'
 
             if base_new_filename in old:
-                new_filename=os.path.join(oldies_path, base_new_filename)
+                new_filename = os.path.join(oldies_path, base_new_filename)
                 genomes.append((new_filename, new_header_components))
                 old.remove(base_new_filename)
 
             else:
+                updated = 1
                 if keep_genomes:
                     new_filename = os.path.join(oldies_path, base_new_filename)
                 else:
@@ -203,7 +206,7 @@ def fetcher(table, oldies_path=OLDIES_PATH, keep_genomes=None, format_genomes=No
             base_new_filename = '_'.join(new_header_components) + '.fna.gz'
 
             if base_new_filename in old:
-                new_filename=os.path.join(oldies_path, base_new_filename)
+                new_filename = os.path.join(oldies_path, base_new_filename)
                 genomes.append((new_filename, new_header_components))
                 old.remove(base_new_filename)
 
@@ -213,6 +216,7 @@ def fetcher(table, oldies_path=OLDIES_PATH, keep_genomes=None, format_genomes=No
                     genomes.append((filename, new_header_components))
 
                 else:
+                    updated = 1
                     if keep_genomes:
                         new_filename = os.path.join(oldies_path, base_new_filename)
                     else:
@@ -225,8 +229,8 @@ def fetcher(table, oldies_path=OLDIES_PATH, keep_genomes=None, format_genomes=No
                         print('{} failed download'.format(ftp))
         oldies_cleaner(new_genomes, old, oldies_path)
 
-    print('Finished genomes retrieval in {} seconds'.format(time.time()-t0))
-    return genomes
+    print('\nFinished genomes retrieval in {} seconds'.format(time.time() - t0))
+    return genomes, updated
 
 
 def focus_fetcher(table, oldies_path=OLDIES_PATH, keep_genomes=None):
@@ -238,6 +242,8 @@ def focus_fetcher(table, oldies_path=OLDIES_PATH, keep_genomes=None):
     old = os.listdir(oldies_path)
     temp_genomes = [file for file in os.listdir(GENOMES_PATH) if file.endswith('fna.gz')]
 
+    updated = 0
+
     print('Started genomes to focus on retrieval')
     for row in table.iterrows():
         ftp = row[1]['ftp_path']
@@ -245,7 +251,7 @@ def focus_fetcher(table, oldies_path=OLDIES_PATH, keep_genomes=None):
         accession = row[1]['# assembly_accession'].split(sep='_')[-1]
         base_new_filename = '_'.join(['_'.join(organism_name.split('_')[0:2]), accession]) + '.fna.gz'
         if base_new_filename in old:
-            new_filename=os.path.join(oldies_path, base_new_filename)
+            new_filename = os.path.join(oldies_path, base_new_filename)
             genomes.append((new_filename, [organism_name, accession]))
             old.remove(base_new_filename)
         elif base_new_filename in temp_genomes:
@@ -253,6 +259,7 @@ def focus_fetcher(table, oldies_path=OLDIES_PATH, keep_genomes=None):
             genomes.append((new_filename, [organism_name, accession]))
             temp_genomes.remove(base_new_filename)
         else:
+            updated = 1
             if keep_genomes:
                 new_filename = os.path.join(oldies_path, base_new_filename)
             else:
@@ -265,8 +272,8 @@ def focus_fetcher(table, oldies_path=OLDIES_PATH, keep_genomes=None):
                 print('{} failed download'.format(ftp))
 
     oldies_cleaner(new_genomes, old, oldies_path)
-    print('Finished genomes to focus on retrieval in {} seconds'.format(time.time() - t0))
-    return genomes
+    print('\nFinished genomes to focus on retrieval in {} seconds'.format(time.time() - t0))
+    return genomes, updated
 
 
 def ncbi_taxa_updated():
@@ -284,6 +291,7 @@ def ncbi_taxa_updated():
 def oldies_cleaner(new_genomes, old, oldies_path):
     # When a genome with same accession prefix but different version is downloaded, the old version is deleted
     # from the current database
+    updated = 0
     old_no_version = list(map(lambda genome: ".".join(genome.split(sep='.')[:-3]), old))
     for genome, genome_no_version in zip(old, old_no_version):
         if genome_no_version in new_genomes:

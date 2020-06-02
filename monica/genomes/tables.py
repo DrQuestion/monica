@@ -25,7 +25,7 @@ def fetcher():
         print('Started fetching tables')
         wget.download(REFSEQ_SUMMARY_FTP, out=TABLES_PATH)
         wget.download(GENBANK_SUMMARY_FTP, out=TABLES_PATH)
-        print('Finished fetching tables')
+        print('\nFinished fetching tables')
     print(f'Tables download took {time.time()-start} seconds')
 
 

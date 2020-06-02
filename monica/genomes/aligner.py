@@ -11,7 +11,6 @@ from Bio import SeqIO
 
 
 from .fetcher import GENOMES_PATH
-from .database import DATABASES_PATH
 
 with open(os.path.join(os.path.join(os.path.expanduser('~'), '.monica'), '.root'), 'r') as root:
     MONICA_ROOT = root.readline()
@@ -31,13 +30,13 @@ FOCUS_FILES_FOLDER = 'focus'
 
 def indexer(databases, indexes_path=INDEXES_PATH):
     if not os.path.exists(indexes_path):
-        os.mkdir(indexes_path)
+        os.makedirs(indexes_path)
     else:
         for index in os.listdir(indexes_path):
             if index.endswith('.mmi'):
                 os.remove(os.path.join(indexes_path, index))
     indexes_paths = []
-
+    print('Started building {} index'.format(indexes_path))
     with open(os.path.join(GENOMES_PATH, 'entered_indexer'), 'wb'):
         pass
     for database in os.listdir(databases):
@@ -49,6 +48,7 @@ def indexer(databases, indexes_path=INDEXES_PATH):
             if not index:
                 raise Exception('Index building failed')
             indexes_paths.append(os.path.join(indexes_path, str(number).join(INDEX_NAME)))
+    print('Finished building {} index'.format(indexes_path))
     with open(os.path.join(GENOMES_PATH, 'finished_indexing'), 'wb'):
         pass
     return indexes_paths
@@ -73,38 +73,43 @@ def multi_threaded_aligner(query_folder, indexes_paths, mode=None, mapping_quali
     samples = [file for file in os.listdir('.') if file.endswith('fastq') and os.stat(file).st_size]
     samples_name = list(map(lambda sample_name: sample_name.split('.')[0], samples))
 
-    mapped_folder = os.path.join(query_folder, mapped_files_folder)
-    unmapped_folder = os.path.join(query_folder, unmapped_files_folder)
-    ambiguous_folder = os.path.join(query_folder, ambiguous_files_folder)
-    hits_folder = os.path.join(query_folder, hits_files_folder)
-    focus_folder = os.path.join(query_folder, focus_file_folder)
-    if not os.path.exists(mapped_folder):
-        os.mkdir(mapped_folder)
-        os.mkdir(unmapped_folder)
-        os.mkdir(ambiguous_folder)
-        os.mkdir(hits_folder)
-        if focus_species:
-            os.mkdir(focus_folder)
+    if samples:
+        mapped_folder = os.path.join(query_folder, mapped_files_folder)
+        unmapped_folder = os.path.join(query_folder, unmapped_files_folder)
+        ambiguous_folder = os.path.join(query_folder, ambiguous_files_folder)
+        hits_folder = os.path.join(query_folder, hits_files_folder)
+        focus_folder = os.path.join(query_folder, focus_file_folder)
+        if not os.path.exists(mapped_folder):
+            os.mkdir(mapped_folder)
+            os.mkdir(unmapped_folder)
+            os.mkdir(ambiguous_folder)
+            os.mkdir(hits_folder)
+            if focus_species:
+                os.mkdir(focus_folder)
 
-    pool = ThreadPool(n_threads)
+        pool = ThreadPool(n_threads)
 
-    for i in range(len(indexes_paths) - 1):
-        index = index_loader(indexes_paths[i])
-        pool.starmap(aligner, zip(samples, samples_name, itertools.repeat(index), itertools.repeat(mode),
-                                  itertools.repeat(hits_folder), itertools.repeat(mapping_quality)))
+        for i in range(len(indexes_paths) - 1):
+            index = index_loader(indexes_paths[i])
+            pool.starmap(aligner, zip(samples, samples_name, itertools.repeat(index), itertools.repeat(mode),
+                                      itertools.repeat(hits_folder), itertools.repeat(mapping_quality)))
 
-    index = index_loader(indexes_paths[-1])
+        index = index_loader(indexes_paths[-1])
 
-    results = pool.starmap(aligner, zip(samples, samples_name, itertools.repeat(index), itertools.repeat(mode),
-                                        itertools.repeat(hits_folder), itertools.repeat(mapping_quality),
-                                        itertools.repeat(overnight), itertools.repeat(focus_species),
-                                        itertools.repeat(mapped_folder), itertools.repeat(unmapped_folder),
-                                        itertools.repeat(ambiguous_folder), itertools.repeat(focus_folder),
-                                        itertools.repeat(True)))
+        results = pool.starmap(aligner, zip(samples, samples_name, itertools.repeat(index), itertools.repeat(mode),
+                                            itertools.repeat(hits_folder), itertools.repeat(mapping_quality),
+                                            itertools.repeat(overnight), itertools.repeat(focus_species),
+                                            itertools.repeat(mapped_folder), itertools.repeat(unmapped_folder),
+                                            itertools.repeat(ambiguous_folder), itertools.repeat(focus_folder),
+                                            itertools.repeat(True)))
 
-    alignment = alignment_update(results, output_folder)
+        alignment = alignment_update(results, output_folder)
 
-    return alignment
+        return alignment
+
+    else:
+        print('No query files were provided')
+        return 0
 
 
 # def aligner(sample, sample_name, indexes, mode=None, overnight=False, focus_species=[], mapped_folder=None,
@@ -224,7 +229,6 @@ def aligner(sample, sample_name, index, mode=None, hits_folder=None, mapping_qua
                         best = hits[0]
                     else:
                         best = best_hit(hits)
-                        print(best)
                         if not best:
                             SeqIO.write(seq_record, ambiguous, 'fastq')
                             continue
@@ -263,9 +267,7 @@ def aligner(sample, sample_name, index, mode=None, hits_folder=None, mapping_qua
 
         if sample_hits_pickle_filename in os.listdir(hits_folder):
             stored_hits = pickle.load(open(os.path.join(hits_folder, sample_hits_pickle_filename), 'rb'))
-            print('stored hits are {}'.format(stored_hits))
             stored_hits.update(sample_hits)
-            print('updated stored hits are {}'.format(stored_hits))
             pickle.dump(stored_hits, open(os.path.join(hits_folder, sample_hits_pickle_filename), 'wb'))
         else:
             pickle.dump(sample_hits, open(os.path.join(hits_folder, sample_hits_pickle_filename), 'wb'))
@@ -301,9 +303,9 @@ def alignment_update(results, output_folder):
     return alignment
 
 
-def normalizer(alignment, genomes_length=None, databases_path=DATABASES_PATH):
+def normalizer(alignment, genomes_length=None):
     if not genomes_length:
-        genomes_length = pickle.load(open(os.path.join(databases_path, 'current_genomes_length.pkl'), 'rb'))
+        genomes_length = pickle.load(open(os.path.join(GENOMES_PATH, 'current_genomes_length.pkl'), 'rb'))
     for sample in alignment.keys():
         sample_total = 0
         for tax_unit, counter in alignment[sample].items():
@@ -319,7 +321,7 @@ def normalizer(alignment, genomes_length=None, databases_path=DATABASES_PATH):
 
 
 def alignment_to_data_frame(alignment, output_folder=None, filename='monica.dataframe'):
-    data_frame = pd.concat({k: pd.DataFrame(v).unstack() for k, v in alignment.items()}, axis=1).dropna(how='all')
+    data_frame = pd.concat({k: pd.DataFrame(v).unstack() for k, v in alignment.items() if v}, axis=1).dropna(how='all')
     pd.DataFrame.to_csv(data_frame, os.path.join(output_folder, filename))
     return data_frame
 

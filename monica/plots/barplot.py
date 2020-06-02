@@ -54,29 +54,28 @@ def color_generator(n_elements, palette):
 
 
 def plotter(norm_alignment_df, raw_alignment_df, output_folder=None, palette='jet', reads_threshold=READS_THRESHOLD,
-            host=None, guests=None, mode=None, show_legend=True, auto_open=True):
+            hosts=None, guests=None, mode=None, show_legend=True, auto_open=True):
     x = [col for col in norm_alignment_df.columns]
     norm_alignment_by_taxunit = _by_taxunit(norm_alignment_df)
     raw_alignment_by_taxunit = _by_taxunit(raw_alignment_df)
     norm_alignment_by_taxunit = filter_low_reads(norm_alignment_by_taxunit, raw_alignment_by_taxunit, reads_threshold)
     bars = []
-    if host:
-        host = '_'.join(host.split(sep=' '))
+    if hosts:
         if guests:
-            guests = [g for g in guests]
-            title_text = 'Guests: {}; host: {}; analysis mode: {}'.format(', '.join(guests), host, mode)
+            title_text = 'Guests: {}; host: {}; analysis mode: {}'.format(', '.join(guests), ', '.join(hosts), mode)
         else:
             # Unlikely? Overnight with host given?
-            title_text = 'Host: {}; analysis mode: {}'.format(host, mode)
+            title_text = 'Host: {}; analysis mode: {}'.format(', '.join(hosts), mode)
     elif guests:
-        guests = [g for g in guests]
+        hosts = []
         title_text = 'Guests: {}; analysis mode: {}'.format(', '.join(guests), mode)
     else:
         # Overnight no host given?
+        hosts = []
         title_text = 'Analysis mode: {}'.format(mode)
     colors_spaces, colors_lines = color_generator(len(norm_alignment_by_taxunit), palette)
     for taxunit, color_space, color_line in zip(norm_alignment_by_taxunit.keys(), colors_spaces, colors_lines):
-        if taxunit == host:
+        if taxunit in hosts:
             name = taxunit + '_(host)'
         else:
             name = taxunit

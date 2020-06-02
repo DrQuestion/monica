@@ -16,13 +16,16 @@ DATABASE_NAME = ['database', '.fna.gz']
 def multi_threaded_builder(genomes=None, max_chunk_size=None, databases_path=DATABASES_PATH,
                            database_name=DATABASE_NAME, keep_genomes=None, n_threads=None):
     if not os.path.exists(databases_path):
-        os.mkdir(databases_path)
+        os.makedirs(databases_path)
     else:
         for database in os.listdir(databases_path):
             if database.endswith('.fna.gz'):
                 os.remove(os.path.join(databases_path, database))
 
-    current_genomes_length = dict()
+    if 'current_genomes_length.pkl' in os.listdir(GENOMES_PATH):
+        current_genomes_length = pickle.load(open(os.path.join(GENOMES_PATH, 'current_genomes_length.pkl'), 'rb'))
+    else:
+        current_genomes_length = dict()
 
     pool = ThreadPool(n_threads)
 
@@ -39,7 +42,7 @@ def multi_threaded_builder(genomes=None, max_chunk_size=None, databases_path=DAT
             if genome.endswith('.fna.gz'):
                 os.remove(os.path.join(GENOMES_PATH, genome))
 
-    pickle.dump(current_genomes_length, open(os.path.join(databases_path, 'current_genomes_length.pkl'), 'wb'))
+    pickle.dump(current_genomes_length, open(os.path.join(GENOMES_PATH, 'current_genomes_length.pkl'), 'wb'))
 
     with open(os.path.join(GENOMES_PATH, 'database_created'), 'wb'):
         pass
@@ -60,6 +63,7 @@ def builder(genomes_chunk, databases_path, database_name, database_number):
                     genome_length += len(seq_record)
                     SeqIO.write(seq_record, database, 'fasta')
             this_database_genomes_length[genome[1][1]] = genome_length
+    print('Finished building {}'.format(str(database_number).join(database_name)))
     return this_database_genomes_length
 
 
