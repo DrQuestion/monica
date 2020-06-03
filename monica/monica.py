@@ -3,12 +3,14 @@
 # TODO log system when launching monica from scratch to save all parameters, to keep host, guests and mode
 # TODO argcomplete
 
+__version__ = '0.1.0'
+
 import os
 
 if os.path.exists(os.path.join(os.path.expanduser('~'), '.monica')):
     with open(os.path.join(os.path.join(os.path.expanduser('~'), '.monica'), '.root'), 'r') as root:
         MONICA_ROOT = root.readline()
-        print(f'root is {MONICA_ROOT}')
+        # print(f'root is {MONICA_ROOT}')
 else:
     os.mkdir(os.path.join(os.path.expanduser('~'), '.monica'))
     with open(os.path.join(os.path.join(os.path.expanduser('~'), '.monica'), '.root'), 'w') as root:
@@ -16,8 +18,9 @@ else:
     MONICA_ROOT = os.path.join(os.path.expanduser('~'), '.monica')
 os.chdir(MONICA_ROOT)
 
-# import warnings
-# warnings.filterwarnings("ignore", category=UserWarning)
+import warnings
+
+warnings.filterwarnings("ignore", category=UserWarning)
 
 import argparse
 import psutil
@@ -34,83 +37,75 @@ import helpers.helpers as helpers
 def main():
     parser = argparse.ArgumentParser(prog='monica')
 
-    input_folder = parser.add_mutually_exclusive_group()
+    i_o = parser.add_argument_group('I/O parameters', 'Parameters to handle the input and output')
+    input_folder = i_o.add_mutually_exclusive_group()
     input_folder.add_argument('-q', '--query_folder',
                               help='The folder where input fastq are stored')
     input_folder.add_argument('-f5', '--fast5_folder',
                               help='The folder where input fast5 are stored (real-time use only)')
-    parser.add_argument('-o', '--output_folder',
-                        help='The folder where output files will be stored')
-    parser.add_argument('-G', '--guest_species', nargs='*',
-                        help='Guest species hypothesized to be present in the sample, '
-                             'underscore separated ("Genus_specie"), but also higher levels of the tree of life, '
-                             'like order or genus only')
-    parser.add_argument('-H', '--host_species', nargs='*',
-                        help='Host species where samples come from, underscore separated ("Genus_specie")')
-    parser.add_argument('-F', '--focus_species', nargs='*',
-                        help='Species of interest among the whole guests selected, to focus analysis on their subspecies')
-    parser.add_argument('-m', '--mode', choices=['single', 'all', 'overnight'],
-                        help="The mode of monica's execution: single, all or overnight")
-    parser.add_argument('-a', '--alignment_mode', default='query_length',
-                        help='The alignment mode to be performed.'
-                             'Default is %(default)s')
-    parser.add_argument('-g', '--genomes_folder', default=gfetcher.OLDIES_PATH,
-                        help='The folder where already stored genomes will be found '
-                             'and new genomes will be stored if --keep_genomes option is set to "yes". '
-                             'Default is %(default)s')
-    parser.add_argument('-k', '--keep_genomes', choices=['yes', 'no'], default='yes',
-                        help='Choose if genomes are to be kept in -g. Default is "%(default)s"')
-    parser.add_argument('-i', '--indexes', nargs='*', help='folder where indexes must be written/read')
-    parser.add_argument('--not_auto_open_plot', action='store_true',
-                        help='If wishing NOT to plot the results at the and of the analysis')
-    parser.add_argument('--not_show_legend', action='store_true',
-                        help='If wishing NOT to show legend')
-    parser.add_argument('-R', '--reads_threshold', default=0,
-                        help='Threshold of reads for a specie in each sample that will be displayed in the plot. '
-                             'If lower in all samples species not displayed. '
-                             'Default is %(default)d')
-    parser.add_argument('--format_genomes',
-                        help='Folder, call it together with -m and -H/-G, when assembly-formatted genomes '
-                             'are present in it without being formatted for monica')
-    parser.add_argument('-t', '--threads', type=int, default=3,
-                        help='The number of threads to be used.'
-                             'Default is %(default)d')
-    parser.add_argument('-im', '--indexing_memory', type=helpers.human_readable,
-                        help='The maximum memory the user wishes to be used during indexing. '
-                             'Must end with a unit of measure among B|K|M|G|T.'
-                             'Default is fourth of total memory')
+    i_o.add_argument('-o', '--output_folder',
+                     help='The folder where output files will be stored')
+    i_o.add_argument('-i', '--indexes', nargs='*', help='folder where indexes must be written/read')
+    i_o.add_argument('-g', '--genomes_folder', default=gfetcher.OLDIES_PATH,
+                     help='The folder where already stored genomes will be found '
+                          'and new genomes will be stored if --keep_genomes option is set to "yes". '
+                          'Default is %(default)s')
+    i_o.add_argument('-k', '--keep_genomes', choices=['yes', 'no'], default='yes',
+                     help='Choose if genomes are to be kept in -g. Default is "%(default)s"')
+    i_o.add_argument('--format_genomes',
+                     help='Folder, call it together with -m and -H/-G, when assembly-formatted genomes '
+                          'are present in it without being formatted for monica')
+    db = parser.add_argument_group('Database parameters', 'Parameters to handle species composition of the database')
+    db.add_argument('-G', '--guest_species', nargs='*',
+                    help='Guest species hypothesized to be present in the sample, can be both, also at the same time: \n\tmultiple entries'
+                         'underscore separated ("Genus_specie"), but also higher levels of the tree of life, '
+                         'like order or genus only; \n\ta file containing many terms as described above, one per line.')
+    db.add_argument('-H', '--host_species', nargs='*',
+                    help='Host species where samples come from, underscore separated ("Genus_specie")')
+    db.add_argument('-F', '--focus_species', nargs='*',
+                    help='Species of interest among the whole guests selected, to focus analysis on their subspecies')
+    db.add_argument('-m', '--mode', choices=['single', 'all', 'overnight'],
+                    help="The mode of monica's execution: single, all or overnight")
+    alignment = parser.add_argument_group('Alignment parameters', 'Parameters to handle the reads alignment')
+    alignment.add_argument('-a', '--alignment_mode', default='query_length',
+                           help='The alignment mode to be performed.'
+                                'Default is %(default)s')
+    plotting = parser.add_argument_group('Plotting parameters', 'Parameters to handle the resulting plots')
+    plotting.add_argument('--not_auto_open_plot', action='store_true',
+                          help='If wishing NOT to display the plots of the results at the and of the analysis')
+    plotting.add_argument('--not_show_legend', action='store_true',
+                          help='If wishing NOT to show legend')
+    plotting.add_argument('-R', '--reads_threshold', default=0,
+                          help='Threshold of reads for a specie in each sample that will be displayed in the plot. '
+                               'If lower in all samples species not displayed. '
+                               'Default is %(default)d')
+    comp = parser.add_argument_group('Computational parameters', )
+    comp.add_argument('-t', '--threads', type=int, default=3,
+                      help='The number of threads to be used.'
+                           'Default is %(default)d')
+    comp.add_argument('-im', '--indexing_memory', type=helpers.human_readable,
+                      help='The maximum memory the indexes occupy during alignment phase. '
+                           'Must end with a unit of measure among B|K|M|G|T.'
+                           'Default is fourth of total memory')
+    parser.add_argument('--version', action='version', version='%(prog)s {version}'.format(version=__version__))
 
     subparsers = parser.add_subparsers()
 
-    # from_scratch = subparsers.add_parser('from_scratch', help='To run monica from the beginning')
-    # from_scratch.add_argument('-H', '--host_specie',
-    #                           help='Host species where samples come from, underscore separated ("Genus_specie")')
-    # from_scratch.add_argument('-G', '--guest_species', nargs='*',
-    #                           help='Guest species hypothesized to be present in the sample, '
-    #                                'underscore separated ("Genus_specie"), but also higher levels of the tree of life, '
-    #                                'like order or genus only')
-    # from_scratch.add_argument('-F', '--focus_species', nargs='*',
-    #                           help='Species of interest among the whole guests selected, focus analysis on their subspecies')
-    # from_scratch.add_argument('--format_genomes',
-    #                           help='Folder, call it together with -m and -H/-G, when assembly-formatted genomes '
-    #                                'are present in it without being formatted for monica')
-    # from_scratch.add_argument('-m', '--mode', choices=['single', 'all', 'overnight'],
-    #                           help="The mode of monica's execution: single, all or overnight")
-    # from_scratch.set_defaults(func=main_from_scratch)
-
-    build_index = subparsers.add_parser('build_index', help='To build an index a priori')
+    build_index = subparsers.add_parser('build_index', aliases=['build'], help='To build an index a priori')
     build_index.set_defaults(func=main_build_index)
 
     list_indexes = subparsers.add_parser('list_indexes', aliases=['ls', 'li'],
                                          help='To print on the screen all the available built indexes')
     list_indexes.set_defaults(func=main_list_indexes)
 
-    plot_only = subparsers.add_parser('plot_only', help='To generate the plot only, given a table of monica results')
+    plot_only = subparsers.add_parser('plot_only', aliases=['plot', 'plt'],
+                                      help='To generate the plot only, given a table of monica results')
     plot_only.add_argument('-d', '--data_frame', help='The monica result data frame to generate the plot from')
     plot_only.set_defaults(func=main_from_plotting)
 
-    initialize = subparsers.add_parser('initialize', help='To control monica root folder where heavy files will be '
-                                                          'downloaded')
+    initialize = subparsers.add_parser('initialize', aliases=['init'],
+                                       help='To set monica root folder where heavy files will be '
+                                            'downloaded')
     initialize.add_argument('-r', '--monica_root_folder', default=MONICA_ROOT,
                             help='Path where ".monica" root folder will be created')
     initialize.set_defaults(func=main_initialize)
@@ -121,127 +116,6 @@ def main():
 
     return args
 
-
-# def main_from_scratch(args):
-#     # Input handling:
-#     if args.query_folder:
-#         input_folder = args.query_folder
-#     else:
-#         input_folder = args.fast5_folder
-#     if args.output_folder:
-#         output_folder = args.output_folder
-#     else:
-#         output_folder = os.path.join(input_folder, 'monica_output')
-#     if not os.path.exists(output_folder):
-#         os.mkdir(output_folder)
-#
-#     with open(os.path.join(MONICA_ROOT, 'monica.params'), 'w') as params:
-#         params.write(str(args))
-#
-#     n_threads = args.threads
-#     alignment_mode = args.alignment_mode
-#
-#     if not args.focus_species:
-#         focus_species = []
-#     else:
-#         focus_species = args.focus_species
-#
-#     auto_open_plot = not args.not_auto_open_plot
-#     show_legend = not args.not_show_legend
-#     reads_threshold = args.reads_threshold
-#
-#     if args.indexing_memory:
-#         indexing_memory = args.indexing_memory
-#     else:
-#         indexing_memory = psutil.virtual_memory().total / 4
-#
-#     max_chunk_size = indexing_memory / 16
-#
-#     mode = args.mode
-#     host = args.host_specie
-#     guests = args.guest_species
-#
-#     helpers.initializer(output_folder)
-#
-#     if guests:
-#         guests = map(lambda guest: ' '.join(guest.split(sep='_')), guests)
-#     if args.keep_genomes == 'yes':
-#         keep_genomes = True
-#     else:
-#         keep_genomes = False
-#     oldies_path = args.genomes_folder
-#     format_genomes = args.format_genomes
-#
-#     # Genomes ftp selection and download:
-#     ftp_table = gfetcher.ftp_selector(mode=mode, species=guests)
-#
-#     if host:
-#         host = ' '.join(host.split(sep='_'))
-#         host_ftp_table = gfetcher.ftp_selector(mode='single', species=[host])
-#         ftp_table = ftp_table.append(host_ftp_table, ignore_index=True)
-#
-#     genomes = gfetcher.fetcher(ftp_table, oldies_path=oldies_path, keep_genomes=keep_genomes,
-#                                format_genomes=format_genomes)
-#
-#     # Database building and indexing:
-#     databases, genomes_length = gdatabase.multi_threaded_builder(genomes=genomes, max_chunk_size=max_chunk_size,
-#                                                                  databases_path=gdatabase.DATABASES_PATH,
-#                                                                  keep_genomes=keep_genomes, n_threads=n_threads)
-#
-#     indexes_paths = galigner.indexer(databases)
-#
-#     # Focus mode indexing building block:
-#     if focus_species:
-#         focus_input_folder = os.path.join(input_folder, 'focus')
-#         focus_output_folder = os.path.join(output_folder, 'focus')
-#         if not os.path.exists(focus_output_folder):
-#             os.mkdir(focus_output_folder)
-#
-#         helpers.initializer(focus_output_folder)
-#
-#         focus_databases_path = os.path.join(gdatabase.DATABASES_PATH, 'focus')
-#         focus_species = map(lambda specie: ' '.join(specie.split(sep='_')), focus_species)
-#         focus_ftp_table = gfetcher.ftp_selector(mode='focus', species=focus_species)
-#         focus_genomes = gfetcher.focus_fetcher(focus_ftp_table, oldies_path=oldies_path, keep_genomes=keep_genomes)
-#         focus_databases, focus_genomes_length = gdatabase.multi_threaded_builder(genomes=focus_genomes,
-#                                                                                  max_chunk_size=max_chunk_size,
-#                                                                                  keep_genomes=keep_genomes,
-#                                                                                  n_threads=n_threads,
-#                                                                                  databases_path=focus_databases_path)
-#         focus_indexes_paths = galigner.indexer(focus_databases,
-#                                                indexes_path=os.path.join(galigner.INDEXES_PATH, 'focus'))
-#
-#     with open(os.path.join(gfetcher.GENOMES_PATH, 'going_to_enter_alignment'), 'wb'):
-#         pass
-#
-#     # Alignment and normalization:
-#     alignment = galigner.multi_threaded_aligner(input_folder, indexes_paths, mode=alignment_mode, n_threads=n_threads,
-#                                                 focus_species=focus_species, output_folder=output_folder)
-#
-#     raw_alignment_df = galigner.alignment_to_data_frame(alignment, output_folder=output_folder,
-#                                                         filename='raw_monica.dataframe')
-#
-#     norm_alignment = galigner.normalizer(alignment, genomes_length)
-#
-#     norm_alignment_df = galigner.alignment_to_data_frame(norm_alignment, output_folder=output_folder)
-#
-#     # Plotting:
-#     barplot.plotter(norm_alignment_df, raw_alignment_df, output_folder=output_folder, palette='jet',
-#                     reads_threshold=reads_threshold, hosts=host, guests=args.guest_species, mode=mode,
-#                     show_legend=show_legend, auto_open=auto_open_plot)
-#
-#     if focus_species:
-#         focus_alignment = galigner.multi_threaded_aligner(focus_input_folder, focus_indexes_paths, mode=alignment_mode,
-#                                                           n_threads=n_threads, output_folder=focus_output_folder)
-#         focus_raw_alignment_df = galigner.alignment_to_data_frame(focus_alignment, output_folder=focus_output_folder,
-#                                                                   filename='raw_monica.dataframe')
-#         focus_norm_alignment = galigner.normalizer(focus_alignment, focus_genomes_length)
-#         focus_norm_alignment_df = galigner.alignment_to_data_frame(focus_norm_alignment,
-#                                                                    output_folder=focus_output_folder)
-#         barplot.plotter(focus_norm_alignment_df, focus_raw_alignment_df, output_folder=focus_output_folder,
-#                         palette='jet', reads_threshold=0, guests=focus_species, mode='focus',
-#                         show_legend=show_legend, auto_open=auto_open_plot)
-#
 
 def main_after_seq(args):
     # Input handling:
@@ -291,14 +165,8 @@ def main_after_seq(args):
 
     helpers.initializer(output_folder)
 
-    if guests:
-        guest_species = guests
-    else:
-        guest_species = []
-    if hosts:
-        host_species = hosts
-    else:
-        host_species = []
+    guest_species = []
+    host_species = []
 
     indexes = args.indexes
 
@@ -336,16 +204,29 @@ def main_after_seq(args):
                 index = os.path.basename(index)
                 for i, j in zip(index.split(sep='_')[1:-2:2], index.split(sep='_')[2:-2:2]):
                     if j != 'm':
-                        guest_species.append(i+'_'+j)
+                        guest_species.append(i + '_' + j)
                     else:
                         guest_species.append(i)
             elif os.path.basename(index)[0:2] == 'H_':
                 index = os.path.basename(index)
-                host_species += [i + '_' + j for i, j in zip(index.split(sep='_')[1:-2:2], index.split(sep='_')[2:-2:2])]
+                host_species += [i + '_' + j for i, j in
+                                 zip(index.split(sep='_')[1:-2:2], index.split(sep='_')[2:-2:2])]
 
     # Guests management: genomes retrieval, database and index formation
     if guests:
         print('Building guests databases and indexes...')
+
+        # To check if provided guests are files listing taxa
+        names = []
+        for guest in guests:
+            if os.path.exists(guest):
+                names += open(guest, 'r').read().splitlines()
+            else:
+                names.append(guest)
+        guests = names
+
+        guest_species += guests
+
         guests_string = 'G_' + '_'.join(guests) + '_m_' + mode + '_im_' + str(
             round(indexing_memory * (10 ** -9), 3))
         guests = map(lambda guest: ' '.join(guest.split(sep='_')), guests)
@@ -410,6 +291,7 @@ def main_after_seq(args):
     # Hosts management: genomes retrieval, database and index formation
     if hosts:
         print('Building hosts databases and indexes...')
+        host_species += hosts
         hosts = map(lambda host: ' '.join(host.split(sep='_')), hosts)
         hosts_ftp_table = gfetcher.ftp_selector(mode='single', species=hosts)
         #    host_ftp_table = ftp_table.append(host_ftp_table, ignore_index=True)
@@ -628,6 +510,16 @@ def main_build_index(args):
     # Guests management: genomes retrieval, database and index formation
     if guests:
         print('Building guests databases and indexes...')
+
+        # To check if provided guests are files listing taxa
+        names = []
+        for guest in guests:
+            if os.path.exists(guest):
+                names += open(guest, 'r').read().splitlines()
+            else:
+                names.append(guest)
+        guests = names
+
         guests_string = 'G_' + '_'.join(guests) + '_m_' + mode + '_im_' + str(round(indexing_memory * (10 ** -9), 3))
         guests = map(lambda guest: ' '.join(guest.split(sep='_')), guests)
         guests_databases_path = os.path.join(gdatabase.DATABASES_PATH, guests_string)
