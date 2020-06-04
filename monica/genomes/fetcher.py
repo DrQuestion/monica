@@ -8,8 +8,10 @@ from ete3 import NCBITaxa
 
 from . import tables
 
-PARENTS = ['Fungi', 'Oomycota', 'Bacteria', 'Archaea', 'Viruses', 'Viroids',
+PARENTS = ['Fungi', 'Oomycota', 'Bacteria', 'Archaea', 'Viruses',
            'Nematodes', 'Rhizaria', 'Alveolata', 'Heterokonta']
+
+VIRUSES_TAXID = 10239
 
 with open(os.path.join(os.path.join(os.path.expanduser('~'), '.monica'), '.root'), 'r') as root:
     MONICA_ROOT = root.readline()
@@ -43,6 +45,7 @@ def descendants_taxid_finder(species=[], focus=False):
 
 def ftp_selector(mode=None, species=[]):
     species_name = []
+    vir_species_name = []
     ftp_path_list = []
 
     if mode == 'overnight':
@@ -75,9 +78,17 @@ def ftp_selector(mode=None, species=[]):
 
     elif mode == 'single':
         print('Activated single mode')
-        taxids = descendants_taxid_finder(species)
+        ncbi = NCBITaxa()
+        vir_species = []
+        not_vir_species = []
+        for specie in species:
+            if is_virus(specie, ncbi):
+                vir_species.append(specie)
+            else:
+                not_vir_species.append(specie)
         table = tables.importer(which='refseq')
-        merged_table = table.merge(taxids, on='taxid')
+        not_vir_taxids = descendants_taxid_finder(not_vir_species)
+        merged_table = table.merge(not_vir_taxids, on='taxid')
         for name in merged_table.loc[:, 'organism_name']:
             if not name.split(sep=' ')[1] == 'sp.':
                 species_name.append(
@@ -87,6 +98,14 @@ def ftp_selector(mode=None, species=[]):
                     ''.join(('_'.join(name.split(sep=' ')[0:2]), name.split(sep=' ')[2])))
         merged_table['species_name'] = species_name
         merged_table = merged_table.drop_duplicates(subset=['species_name'], keep='last')
+        if vir_species:
+            vir_taxids = descendants_taxid_finder(vir_species)
+            vir_merged_table = table.merge(vir_taxids, on='taxid')
+            for name in vir_merged_table.loc[:, 'organism_name']:
+                vir_species_name.append('_'.join(name.split(sep=' ')))
+            vir_merged_table['species_name'] = vir_species_name
+            vir_merged_table = vir_merged_table.drop_duplicates(subset=['species_name'], keep='last')
+            merged_table = merged_table.append(vir_merged_table)
 
     elif mode == 'focus':
         print('Activated focus mode')
@@ -297,3 +316,11 @@ def oldies_cleaner(new_genomes, old, oldies_path):
         if genome_no_version in new_genomes:
             os.remove(os.path.join(oldies_path, genome))
             print(f'\nRemoving {genome}, new version found')
+
+
+def is_virus(specie, ncbi):
+    for taxid in ncbi.get_name_translator([specie])[specie]:
+        lineage = ncbi.get_lineage(taxid)
+        if VIRUSES_TAXID in lineage:
+            return 1
+    return 0
