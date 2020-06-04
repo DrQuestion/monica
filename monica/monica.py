@@ -203,8 +203,11 @@ def main_after_seq(args):
             if os.path.basename(index)[0:2] == 'G_':
                 index = os.path.basename(index)
                 for i, j in zip(index.split(sep='_')[1:-2:2], index.split(sep='_')[2:-2:2]):
-                    if j != 'm':
+                    if j != 'm' and not j[0].isupper():
                         guest_species.append(i + '_' + j)
+                    elif j[0].isupper():
+                        guest_species.append(i)
+                        guest_species.append(j)
                     else:
                         guest_species.append(i)
             elif os.path.basename(index)[0:2] == 'H_':
