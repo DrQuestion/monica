@@ -483,7 +483,7 @@ def main_build_index(args):
     max_chunk_size = indexing_memory / 16
 
     mode = args.mode
-    hosts = args.host_specie
+    hosts = args.host_species
     guests = args.guest_species
 
     if args.indexes:
