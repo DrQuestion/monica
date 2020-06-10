@@ -43,8 +43,7 @@ def indexer(databases, indexes_path=INDEXES_PATH):
         if database.endswith('.fna.gz'):
             number = os.path.split(database)[1][8:-7]
             index = mappy.Aligner(fn_idx_in=os.path.join(databases, database), preset='map-ont', best_n=BEST_N,
-                                  fn_idx_out=bytes(os.path.join(indexes_path, str(number).join(INDEX_NAME)),
-                                                   encoding='utf-8'))
+                                  fn_idx_out=os.path.join(indexes_path, str(number).join(INDEX_NAME)))
             if not index:
                 raise Exception('Index building failed')
             indexes_paths.append(os.path.join(indexes_path, str(number).join(INDEX_NAME)))
@@ -338,3 +337,14 @@ def best_hit(hits):
         return 0
     else:
         return best[0]
+
+
+def any_result(alignment):
+    exists_result = 0
+    for k, v in alignment.items():
+        if v:
+            exists_result += 1
+    if exists_result:
+        return 1
+    else:
+        return 0

@@ -214,6 +214,8 @@ def main_after_seq(args):
                 index = os.path.basename(index)
                 host_species += [i + '_' + j for i, j in
                                  zip(index.split(sep='_')[1:-2:2], index.split(sep='_')[2:-2:2])]
+    else:
+        indexes = []
 
     # Guests management: genomes retrieval, database and index formation
     if guests:
@@ -427,7 +429,7 @@ def main_after_seq(args):
                                                     n_threads=n_threads,
                                                     focus_species=focus_species, output_folder=output_folder)
 
-        if alignment:
+        if galigner.any_result(alignment):
 
             raw_alignment_df = galigner.alignment_to_data_frame(alignment, output_folder=output_folder,
                                                                 filename='raw_monica.dataframe')
@@ -454,7 +456,7 @@ def main_after_seq(args):
                                                                   mode=alignment_mode,
                                                                   n_threads=n_threads,
                                                                   output_folder=focus_output_folder)
-                if focus_alignment:
+                if galigner.any_result(focus_alignment):
                     focus_raw_alignment_df = galigner.alignment_to_data_frame(focus_alignment,
                                                                               output_folder=focus_output_folder,
                                                                               filename='raw_monica.dataframe')
@@ -464,6 +466,10 @@ def main_after_seq(args):
                     barplot.plotter(focus_norm_alignment_df, focus_raw_alignment_df, output_folder=focus_output_folder,
                                     palette='jet', reads_threshold=0, guests=focus_species, mode='focus',
                                     show_legend=show_legend, auto_open=auto_open_plot)
+                else:
+                    print('Mapping on selected database to focus on did not produce any result')
+        else:
+            print('Mapping on selected database did not produce any result')
 
 
 def main_build_index(args):
