@@ -34,8 +34,17 @@ import plots.barplot as barplot
 import helpers.helpers as helpers
 
 
+class SmartFormatter(argparse.HelpFormatter):
+
+    def _split_lines(self, text, width):
+        if text.startswith('R|'):
+            return text[2:].splitlines()
+        # this is the RawTextHelpFormatter._split_lines
+        return argparse.HelpFormatter._split_lines(self, text, width)
+
+
 def main():
-    parser = argparse.ArgumentParser(prog='monica')
+    parser = argparse.ArgumentParser(prog='monica', formatter_class=SmartFormatter)
 
     i_o = parser.add_argument_group('I/O parameters', 'Parameters to handle the input and output')
     input_folder = i_o.add_mutually_exclusive_group()
@@ -57,9 +66,9 @@ def main():
                           'are present in it without being formatted for monica')
     db = parser.add_argument_group('Database parameters', 'Parameters to handle species composition of the database')
     db.add_argument('-G', '--guest_species', nargs='*',
-                    help='Guest species hypothesized to be present in the sample, can be both, also at the same time: \n\tmultiple entries'
-                         'underscore separated ("Genus_specie"), but also higher levels of the tree of life, '
-                         'like order or genus only; \n\ta file containing many terms as described above, one per line.')
+                    help='R|Guest species hypothesized to be present in the sample, \ncan be both, also at the same time: \n\t- multiple entries '
+                         'underscore separated \n\t("Genus_specie"), but also higher levels of the \n\ttree of life, '
+                         'like order or genus only; \n\t- a file containing many terms as described \n\tabove, one per line.')
     db.add_argument('-H', '--host_species', nargs='*',
                     help='Host species where samples come from, underscore separated ("Genus_specie")')
     db.add_argument('-F', '--focus_species', nargs='*',
@@ -72,7 +81,7 @@ def main():
                                 'Default is %(default)s')
     plotting = parser.add_argument_group('Plotting parameters', 'Parameters to handle the resulting plots')
     plotting.add_argument('--not_auto_open_plot', action='store_true',
-                          help='If wishing NOT to display the plots of the results at the and of the analysis')
+                          help='If wishing NOT to display the plots of the results at the end of the analysis')
     plotting.add_argument('--not_show_legend', action='store_true',
                           help='If wishing NOT to show legend')
     plotting.add_argument('-R', '--reads_threshold', default=0,
