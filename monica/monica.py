@@ -1,4 +1,4 @@
-#! /usr/bin/env python3.6
+#! /usr/bin/env python3
 
 # TODO log system when launching monica from scratch to save all parameters, to keep host, guests and mode
 # TODO argcomplete
